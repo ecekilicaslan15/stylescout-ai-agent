@@ -1,43 +1,56 @@
-from models.plan import Plan
+import json
+from pathlib import Path
 
 
-def create_outfit(plan: Plan, trends: dict) -> dict:
+WARDROBE_PATH = Path("data/wardrobe.json")
+
+
+def load_wardrobe() -> list[dict]:
+    """
+    Loads wardrobe items from JSON file.
+    """
+
+    if not WARDROBE_PATH.exists():
+        return []
+
+    with open(WARDROBE_PATH, "r", encoding="utf-8") as file:
+        return json.load(file)
+
+
+def generate_outfit(plan, memory: dict) -> dict:
+    """
+    Generates an outfit recommendation using the plan, user memory,
+    and wardrobe data.
+    """
+
+    wardrobe = load_wardrobe()
+    profile = memory.get("user_profile", {})
+
+    favorite_colors = profile.get("favorite_colors", [])
+    disliked_items = profile.get("disliked_items", [])
+
+    selected_items = []
+
+    for item in wardrobe:
+        matches_event = item.get("event") == plan.event
+        matches_style = item.get("style") == plan.style
+        matches_color = item.get("color") in plan.colors or item.get(
+            "color") in favorite_colors
+
+        if matches_event or matches_style or matches_color:
+            if item.get("name") not in disliked_items:
+                selected_items.append(item)
+
     outfit = {
-        "top": None,
-        "bottom": None,
-        "dress": None,
-        "shoes": None,
-        "bag": None,
-        "accessories": []
+        "event": plan.event,
+        "style": plan.style,
+        "city": plan.city,
+        "date": plan.date,
+        "items": selected_items[:4],
+        "reason": "This outfit was selected based on your request, saved preferences, and available wardrobe items."
     }
 
-    selected_color = plan.color if plan.color else "neutral"
-
-    if plan.event == "wedding":
-        outfit["dress"] = f"{selected_color} satin dress"
-        outfit["shoes"] = "Minimal heels"
-        outfit["bag"] = "Small clutch bag"
-        outfit["accessories"] = [
-            "Pearl earrings",
-            "Simple necklace"
-        ]
-
-    elif plan.event == "office":
-        outfit["top"] = "White shirt"
-        outfit["bottom"] = "Black tailored pants"
-        outfit["shoes"] = "Loafers"
-        outfit["bag"] = "Leather tote"
-        outfit["accessories"] = [
-            "Minimal watch"
-        ]
-
-    else:
-        outfit["top"] = f"{selected_color} basic top"
-        outfit["bottom"] = "Straight-leg jeans"
-        outfit["shoes"] = "Clean sneakers"
-        outfit["bag"] = "Everyday shoulder bag"
-        outfit["accessories"] = [
-            "Simple earrings"
-        ]
+    if not selected_items:
+        outfit["reason"] = "No perfect wardrobe match was found, so try adding more items to your wardrobe."
 
     return outfit
