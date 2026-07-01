@@ -2,55 +2,50 @@ from models.plan import Plan
 
 
 def plan_user_request(user_input: str) -> Plan:
-    user_input_lower = user_input.lower()
+    """
+    Converts user input into a structured fashion plan.
+    This is a simple rule-based planner for MVP.
+    """
 
+    text = user_input.lower()
     plan = Plan()
-    plan.raw_input = user_input
 
     # Event detection
-    if "wedding" in user_input_lower:
-        plan.event = "wedding"
-    elif "party" in user_input_lower:
-        plan.event = "party"
-    elif "office" in user_input_lower or "work" in user_input_lower:
+    if "office" in text or "work" in text:
         plan.event = "office"
+    elif "wedding" in text:
+        plan.event = "wedding"
+    elif "party" in text:
+        plan.event = "party"
+    elif "daily" in text or "casual" in text:
+        plan.event = "daily"
 
     # Style detection
-    if "elegant" in user_input_lower:
+    if "elegant" in text or "classy" in text:
         plan.style = "elegant"
-    elif "casual" in user_input_lower:
-        plan.style = "casual"
-    elif "sport" in user_input_lower:
-        plan.style = "sporty"
+    elif "minimal" in text:
+        plan.style = "minimal"
+    elif "comfortable" in text or "comfy" in text:
+        plan.style = "comfortable"
 
     # Color detection
-    colors = ["black", "white", "red", "blue",
-              "green", "beige", "pink", "brown"]
+    colors = ["black", "white", "beige", "navy", "blue", "gray", "pink", "red"]
     for color in colors:
-        if color in user_input_lower:
-            plan.color = color
-            break
+        if color in text:
+            plan.colors.append(color)
 
-    # Clothing type detection
-    clothing_types = ["dress", "shirt", "pants",
-                      "skirt", "jacket", "blazer", "coat"]
-    for item in clothing_types:
-        if item in user_input_lower:
-            plan.clothing_type = item
-            break
+    # City detection
+    if "istanbul" in text:
+        plan.city = "Istanbul"
+    elif "izmir" in text:
+        plan.city = "Izmir"
+    elif "ankara" in text:
+        plan.city = "Ankara"
 
-    # Budget detection
-    words = user_input_lower.replace("$", " $ ").split()
-    for word in words:
-        if word.isdigit():
-            plan.budget = int(word)
-            break
-
-    # Season detection
-    seasons = ["summer", "winter", "spring", "fall", "autumn"]
-    for season in seasons:
-        if season in user_input_lower:
-            plan.season = season
-            break
+    # Date detection
+    if "tomorrow" in text:
+        plan.date = "tomorrow"
+    elif "today" in text:
+        plan.date = "today"
 
     return plan

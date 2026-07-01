@@ -1,14 +1,10 @@
-from dataclasses import dataclass
-from typing import Optional
+from dataclasses import dataclass, field
 
 
 @dataclass
 class Plan:
-
-    event: Optional[str] = None
-    style: Optional[str] = None
-    budget: Optional[int] = None
-    color: Optional[str] = None
-    clothing_type: Optional[str] = None
-    season: Optional[str] = None
-    raw_input: Optional[str] = None
+    event: str = "daily"
+    style: str = "casual"
+    colors: list[str] = field(default_factory=list)
+    city: str | None = None
+    date: str | None = None
