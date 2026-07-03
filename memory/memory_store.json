@@ -1,14 +1,13 @@
 {
-    "user_profile": {
-        "favorite_colors": [
-            "black",
-            "beige"
-        ],
-        "disliked_items": [],
-        "preferred_styles": [
-            "minimal",
-            "elegant"
-        ],
-        "preferred_fit": ""
-    }
+    "favorite_colors": [
+        "black",
+        "white"
+    ],
+    "preferred_styles": [
+        "casual"
+    ],
+    "disliked_items": [
+        "Loafers",
+        "Black Loafers"
+    ]
 }

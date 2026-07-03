@@ -1,0 +1,28 @@
+{
+    "tops": [
+        {
+            "name": "White Shirt",
+            "category": "tops",
+            "color": "white",
+            "style": "casual"
+        }
+    ],
+    "bottoms": [
+        {
+            "name": "Blue Jeans",
+            "category": "bottoms",
+            "color": "blue",
+            "style": "casual"
+        }
+    ],
+    "shoes": [
+        {
+            "name": "Black Sneakers",
+            "category": "shoes",
+            "color": "black",
+            "style": "casual"
+        }
+    ],
+    "outerwear": [],
+    "accessories": []
+}
