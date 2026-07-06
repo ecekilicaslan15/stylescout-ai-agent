@@ -1,10 +1,14 @@
 {
     "favorite_colors": [
         "black",
-        "white"
+        "white",
+        "beige",
+        "pink",
+        "navy"
     ],
     "preferred_styles": [
-        "casual"
+        "casual",
+        "elegant"
     ],
     "disliked_items": [
         "Loafers",

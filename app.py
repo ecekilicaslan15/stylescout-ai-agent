@@ -1,8 +1,31 @@
 import streamlit as st
 
 from memory.memory_store import load_memory, update_memory_from_input
-from orchestrator.fashion_orchestrator import run_fashion_agent
+from models.agent_response import AgentResponse
+from orchestrator.fashion_orchestrator import run_fashion_agent, run_inline_edit
 from wardrobe.wardrobe_manager import load_wardrobe, update_wardrobe_from_input
+
+
+def _to_agent_response(result: dict) -> AgentResponse:
+    """Wrap orchestrator dict output as AgentResponse for the UI."""
+    message = result.get("message") or ""
+    outfit = result.get("outfit")
+
+    if outfit and not message:
+        message = "Outfit generated successfully."
+    elif not message:
+        message = "Request processed successfully."
+
+    return AgentResponse(
+        success=True,
+        agent_name="fashion_orchestrator",
+        message=message,
+        data={
+            "plan": result["plan"],
+            "memory": result["memory"],
+            "outfit": outfit,
+        },
+    )
 
 
 st.set_page_config(
@@ -10,6 +33,13 @@ st.set_page_config(
     page_icon="👗",
     layout="wide",
 )
+
+if "display_result" not in st.session_state:
+    st.session_state.display_result = None
+if "current_outfit" not in st.session_state:
+    st.session_state.current_outfit = None
+if "inline_edit_feedback" not in st.session_state:
+    st.session_state.inline_edit_feedback = None
 
 CATEGORY_VISUALS = {
     "tops": "👚",
@@ -376,218 +406,296 @@ with st.container(border=True):
         unsafe_allow_html=True,
     )
 
-    user_input = st.text_area(
-        "What kind of outfit do you need?",
-        placeholder="Example: I need an elegant office outfit in Istanbul. I like black and beige.",
-        height=120,
-        label_visibility="collapsed",
-    )
+    with st.form("generate_outfit_form", clear_on_submit=False):
+        user_input = st.text_area(
+            "What kind of outfit do you need?",
+            placeholder="Example: I need an elegant office outfit in Istanbul. I like black and beige.",
+            height=120,
+            label_visibility="collapsed",
+        )
 
-    generate_clicked = st.button(
-        "Generate Outfit",
-        type="primary",
-        use_container_width=True,
-    )
+        generate_clicked = st.form_submit_button(
+            "Generate Outfit",
+            type="primary",
+            use_container_width=True,
+        )
 
 if generate_clicked:
     if not user_input.strip():
         st.warning("Please describe what kind of outfit you need.")
     else:
-        update_memory_from_input(user_input)
-        wardrobe_update = update_wardrobe_from_input(user_input)
-        result = run_fashion_agent(user_input)
-
-        plan = result["plan"]
-        outfit = result["outfit"]
-        memory = load_memory()
-        wardrobe = load_wardrobe()
-        message = result.get("message", "")
-
+        wardrobe_update = None
         status_messages = []
 
-        if wardrobe_update:
-            item = wardrobe_update["item"]
-            if wardrobe_update["added"]:
-                status_messages.append(
-                    f'Saved <strong>{item["name"]}</strong> to your wardrobe ({item["category"]}).'
-                )
+        try:
+            update_memory_from_input(user_input)
+        except Exception as e:
+            st.error(f"Memory update error: {e}")
+
+        try:
+            wardrobe_update = update_wardrobe_from_input(user_input)
+        except Exception as e:
+            st.error(f"Wardrobe update error: {e}")
+
+        try:
+            result = run_fashion_agent(user_input)
+            response = _to_agent_response(result)
+
+            if response.success:
+                plan = response.data.get("plan")
+                outfit = response.data.get("outfit")
+
+                if "outfit" in response.data and response.data["outfit"]:
+                    st.session_state.current_outfit = response.data["outfit"]
+
+                memory = response.data.get("memory") or load_memory()
+                wardrobe = load_wardrobe()
+
+                if wardrobe_update:
+                    item = wardrobe_update["item"]
+                    if wardrobe_update["added"]:
+                        status_messages.append(
+                            f'Saved <strong>{item["name"]}</strong> to your wardrobe ({item["category"]}).'
+                        )
+                    else:
+                        status_messages.append(
+                            f'<strong>{item["name"]}</strong> is already in your wardrobe.'
+                        )
+
+                if response.message:
+                    status_messages.append(response.message)
+
+                st.session_state.display_result = {
+                    "plan": plan,
+                    "outfit": outfit,
+                    "memory": memory,
+                    "wardrobe": wardrobe,
+                    "status_messages": status_messages,
+                }
+                st.session_state.inline_edit_feedback = None
             else:
-                status_messages.append(
-                    f'<strong>{item["name"]}</strong> is already in your wardrobe.'
-                )
+                st.error(response.error or response.message)
+        except Exception as e:
+            st.error(str(e))
 
-        if message:
-            status_messages.append(message)
+if st.session_state.get("current_outfit"):
+    outfit = st.session_state.current_outfit
+    st.markdown('<div class="scrapbook-card">', unsafe_allow_html=True)
+    render_section_label("Recommended Outfit")
+    st.markdown(
+        '<p class="card-title">Your moodboard picks</p>',
+        unsafe_allow_html=True,
+    )
 
-        if status_messages:
+    if outfit.get("items"):
+        st.markdown(
+            f'<p class="card-copy">Curated for <strong>{outfit["event"]}</strong> with a '
+            f'<strong>{outfit["style"]}</strong> direction.</p>',
+            unsafe_allow_html=True,
+        )
+
+        for index, item in enumerate(outfit["items"]):
+            visual = CATEGORY_VISUALS.get(item["category"], "✨")
             st.markdown(
-                f'<div class="status-banner">{" ".join(status_messages)}</div>',
+                f"""
+                <div class="item-card">
+                    <div class="item-visual">{visual}</div>
+                    <p class="item-name">{item["name"]}</p>
+                    <p class="item-meta">{item["category"]} · {item["color"]}</p>
+                </div>
+                """,
                 unsafe_allow_html=True,
             )
 
-        favorite_colors = memory.get("favorite_colors", [])
-        preferred_styles = memory.get("preferred_styles", [])
-        disliked_items = memory.get("disliked_items", [])
+            instruction = st.text_input(
+                "Ask AI about this item",
+                key=f"item_instruction_{index}",
+                placeholder="Example: make this more elegant",
+            )
 
-        st.markdown('<div class="scrapbook-card">', unsafe_allow_html=True)
-        render_section_label("Style Memory")
+            if st.button("Update Item", key=f"update_item_{index}"):
+                if not instruction.strip():
+                    st.session_state.inline_edit_feedback = (
+                        "Please describe how you want to update this item."
+                    )
+                    st.rerun()
+
+                edit_result = run_inline_edit(
+                    current_outfit=outfit,
+                    target_item=item,
+                    instruction=instruction.strip(),
+                )
+
+                if not edit_result.get("success"):
+                    st.session_state.inline_edit_feedback = (
+                        edit_result.get("error") or edit_result.get("message")
+                    )
+                    st.rerun()
+
+                updated_item = edit_result.get("updated_item")
+                if updated_item:
+                    updated_outfit = dict(outfit)
+                    updated_items = list(updated_outfit.get("items", []))
+                    updated_items[index] = updated_item
+                    updated_outfit["items"] = updated_items
+                    st.session_state.current_outfit = updated_outfit
+
+                    if st.session_state.display_result:
+                        display = dict(st.session_state.display_result)
+                        display_outfit = dict(display.get("outfit") or {})
+                        display_items = list(display_outfit.get("items", []))
+                        if index < len(display_items):
+                            display_items[index] = updated_item
+                        display_outfit["items"] = display_items
+                        display["outfit"] = display_outfit
+                        st.session_state.display_result = display
+
+                st.session_state.inline_edit_feedback = edit_result.get("message")
+                st.rerun()
+    else:
         st.markdown(
-            '<p class="card-title">Your saved taste</p>',
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            '<p class="card-copy">A quick snapshot of what StyleScout remembers about your style profile.</p>',
-            unsafe_allow_html=True,
-        )
-
-        memory_html = """
-        <div class="plan-grid">
-            <div class="plan-item">
-                <div class="plan-key">Favorite Colors</div>
-                <div class="memory-row">
-        """
-        if favorite_colors:
-            for color in favorite_colors:
-                memory_html += f'<span class="memory-chip">{color}</span>'
-        else:
-            memory_html += '<span class="memory-chip empty">Not set yet</span>'
-
-        memory_html += """
-                </div>
-            </div>
-            <div class="plan-item">
-                <div class="plan-key">Preferred Styles</div>
-                <div class="memory-row">
-        """
-        if preferred_styles:
-            for style in preferred_styles:
-                memory_html += f'<span class="memory-chip">{style}</span>'
-        else:
-            memory_html += '<span class="memory-chip empty">Not set yet</span>'
-
-        memory_html += """
-                </div>
-            </div>
-            <div class="plan-item" style="grid-column: 1 / -1;">
-                <div class="plan-key">Disliked Items</div>
-                <div class="memory-row">
-        """
-        if disliked_items:
-            for item in disliked_items:
-                memory_html += f'<span class="memory-chip pink">{item}</span>'
-        else:
-            memory_html += '<span class="memory-chip empty">Not set yet</span>'
-
-        memory_html += """
-                </div>
-            </div>
-        </div>
-        """
-        st.markdown(memory_html, unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-
-        render_wardrobe_section(wardrobe)
-
-        st.markdown('<div class="scrapbook-card">', unsafe_allow_html=True)
-        render_section_label("Detected Plan")
-        st.markdown(
-            '<p class="card-title">What I understood</p>',
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            f"""
-            <div class="plan-grid">
-                <div class="plan-item">
-                    <div class="plan-key">Intent</div>
-                    <div class="plan-value">{plan.intent.replace("_", " ")}</div>
-                </div>
-                <div class="plan-item">
-                    <div class="plan-key">Event</div>
-                    <div class="plan-value">{plan.event}</div>
-                </div>
-                <div class="plan-item">
-                    <div class="plan-key">Style</div>
-                    <div class="plan-value">{plan.style}</div>
-                </div>
-                <div class="plan-item">
-                    <div class="plan-key">Colors</div>
-                    <div class="plan-value">{format_list(plan.colors) if plan.colors else "Not specified"}</div>
-                </div>
-                <div class="plan-item">
-                    <div class="plan-key">City</div>
-                    <div class="plan-value">{plan.city if plan.city else "Not specified"}</div>
-                </div>
-                <div class="plan-item">
-                    <div class="plan-key">Date</div>
-                    <div class="plan-value">{plan.date if plan.date else "Not specified"}</div>
-                </div>
+            """
+            <div class="empty-state">
+                No outfit items matched this plan yet. Try adding more pieces to
+                your wardrobe or adjusting your request.
             </div>
             """,
             unsafe_allow_html=True,
         )
-        st.markdown("</div>", unsafe_allow_html=True)
 
-        st.markdown('<div class="scrapbook-card">', unsafe_allow_html=True)
-        render_section_label("Recommended Outfit")
+    if outfit.get("reason"):
         st.markdown(
-            '<p class="card-title">Your moodboard picks</p>',
+            f"""
+            <div class="reason-card">
+                <p class="section-label">Why This Outfit</p>
+                <p class="card-title" style="font-size:1.2rem; margin-bottom:0.5rem;">
+                    Stylist Notes
+                </p>
+                <p class="reason-text">{outfit["reason"]}</p>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
 
-        if outfit is None:
-            st.markdown(
-                """
-                <div class="empty-state">
-                    No outfit was generated for this request. StyleScout may have
-                    focused on updating your style memory instead.
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-        elif outfit["items"]:
-            st.markdown(
-                f'<p class="card-copy">Curated for <strong>{outfit["event"]}</strong> with a '
-                f'<strong>{outfit["style"]}</strong> direction.</p>',
-                unsafe_allow_html=True,
-            )
+    st.markdown("</div>", unsafe_allow_html=True)
 
-            columns = st.columns(min(len(outfit["items"]), 3))
-            for index, item in enumerate(outfit["items"]):
-                visual = CATEGORY_VISUALS.get(item["category"], "✨")
-                with columns[index % len(columns)]:
-                    st.markdown(
-                        f"""
-                        <div class="item-card">
-                            <div class="item-visual">{visual}</div>
-                            <p class="item-name">{item["name"]}</p>
-                            <p class="item-meta">{item["category"]} · {item["color"]}</p>
-                        </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
-        else:
-            st.markdown(
-                """
-                <div class="empty-state">
-                    No outfit items matched this plan yet. Try adding more pieces to
-                    your wardrobe or adjusting your request.
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+if st.session_state.display_result:
+    display = st.session_state.display_result
+    plan = display["plan"]
+    memory = display["memory"]
+    wardrobe = display["wardrobe"]
+    status_messages = display["status_messages"]
 
-        st.markdown("</div>", unsafe_allow_html=True)
+    if status_messages:
+        st.markdown(
+            f'<div class="status-banner">{" ".join(status_messages)}</div>',
+            unsafe_allow_html=True,
+        )
 
-        if outfit is not None:
-            st.markdown(
-                f"""
-                <div class="reason-card">
-                    <p class="section-label">Why This Outfit</p>
-                    <p class="card-title" style="font-size:1.2rem; margin-bottom:0.5rem;">
-                        Stylist Notes
-                    </p>
-                    <p class="reason-text">{outfit["reason"]}</p>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+    if st.session_state.inline_edit_feedback:
+        st.markdown(
+            f'<div class="status-banner">{st.session_state.inline_edit_feedback}</div>',
+            unsafe_allow_html=True,
+        )
+
+    favorite_colors = memory.get("favorite_colors", [])
+    preferred_styles = memory.get("preferred_styles", [])
+    disliked_items = memory.get("disliked_items", [])
+
+    st.markdown('<div class="scrapbook-card">', unsafe_allow_html=True)
+    render_section_label("Style Memory")
+    st.markdown(
+        '<p class="card-title">Your saved taste</p>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<p class="card-copy">A quick snapshot of what StyleScout remembers about your style profile.</p>',
+        unsafe_allow_html=True,
+    )
+
+    memory_html = """
+    <div class="plan-grid">
+        <div class="plan-item">
+            <div class="plan-key">Favorite Colors</div>
+            <div class="memory-row">
+    """
+    if favorite_colors:
+        for color in favorite_colors:
+            memory_html += f'<span class="memory-chip">{color}</span>'
+    else:
+        memory_html += '<span class="memory-chip empty">Not set yet</span>'
+
+    memory_html += """
+            </div>
+        </div>
+        <div class="plan-item">
+            <div class="plan-key">Preferred Styles</div>
+            <div class="memory-row">
+    """
+    if preferred_styles:
+        for style in preferred_styles:
+            memory_html += f'<span class="memory-chip">{style}</span>'
+    else:
+        memory_html += '<span class="memory-chip empty">Not set yet</span>'
+
+    memory_html += """
+            </div>
+        </div>
+        <div class="plan-item" style="grid-column: 1 / -1;">
+            <div class="plan-key">Disliked Items</div>
+            <div class="memory-row">
+    """
+    if disliked_items:
+        for item in disliked_items:
+            memory_html += f'<span class="memory-chip pink">{item}</span>'
+    else:
+        memory_html += '<span class="memory-chip empty">Not set yet</span>'
+
+    memory_html += """
+            </div>
+        </div>
+    </div>
+    """
+    st.markdown(memory_html, unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    render_wardrobe_section(wardrobe)
+
+    st.markdown('<div class="scrapbook-card">', unsafe_allow_html=True)
+    render_section_label("Detected Plan")
+    st.markdown(
+        '<p class="card-title">What I understood</p>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        f"""
+        <div class="plan-grid">
+            <div class="plan-item">
+                <div class="plan-key">Intent</div>
+                <div class="plan-value">{plan.intent.replace("_", " ")}</div>
+            </div>
+            <div class="plan-item">
+                <div class="plan-key">Event</div>
+                <div class="plan-value">{plan.event}</div>
+            </div>
+            <div class="plan-item">
+                <div class="plan-key">Style</div>
+                <div class="plan-value">{plan.style}</div>
+            </div>
+            <div class="plan-item">
+                <div class="plan-key">Colors</div>
+                <div class="plan-value">{format_list(plan.colors) if plan.colors else "Not specified"}</div>
+            </div>
+            <div class="plan-item">
+                <div class="plan-key">City</div>
+                <div class="plan-value">{plan.city if plan.city else "Not specified"}</div>
+            </div>
+            <div class="plan-item">
+                <div class="plan-key">Date</div>
+                <div class="plan-value">{plan.date if plan.date else "Not specified"}</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown("</div>", unsafe_allow_html=True)

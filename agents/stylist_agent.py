@@ -1,5 +1,10 @@
 from wardrobe.wardrobe_manager import load_wardrobe
 
+from agents.base_agent import BaseAgent
+from memory.memory_manager import load_memory
+from models.agent_response import AgentResponse
+from models.plan import plan_from_dict
+
 # Fallback items when the user's wardrobe is still empty.
 DEFAULT_ITEMS = [
     {
@@ -258,3 +263,43 @@ def generate_outfit(plan, memory: dict) -> dict:
             )
 
     return outfit
+
+
+class StylistAgent(BaseAgent):
+    name = "stylist_agent"
+    description = "Builds outfit recommendations from wardrobe items and style memory."
+
+    _HANDLED_INTENTS = {"outfit_request", "outfit_request_with_memory_update"}
+
+    def can_handle(self, plan: dict) -> bool:
+        intent = plan.get("intent", "outfit_request")
+        if intent in self._HANDLED_INTENTS:
+            return True
+        # Default fallback for unrecognized intents.
+        return intent not in {
+            "memory_update",
+            "inline_edit",
+            "sewing_request",
+            "trend_request",
+            "shopping_request",
+        }
+
+    def run(
+        self,
+        user_input: str,
+        plan: dict,
+        context: dict | None = None,
+    ) -> AgentResponse:
+        memory = (context or {}).get("memory")
+        if memory is None:
+            memory = load_memory()
+
+        plan_obj = plan_from_dict(plan) if isinstance(plan, dict) else plan
+        outfit = generate_outfit(plan_obj, memory)
+
+        return AgentResponse(
+            success=True,
+            agent_name=self.name,
+            message="",
+            data={"outfit": outfit},
+        )
