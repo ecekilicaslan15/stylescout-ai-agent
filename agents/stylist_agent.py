@@ -5,50 +5,20 @@ from memory.memory_manager import load_memory
 from models.agent_response import AgentResponse
 from models.plan import plan_from_dict
 
-# Fallback items when the user's wardrobe is still empty.
+
 DEFAULT_ITEMS = [
-    {
-        "name": "Black Blazer",
-        "category": "outerwear",
-        "color": "black",
-        "style": "elegant",
-        "event": "office",
-    },
-    {
-        "name": "White Shirt",
-        "category": "top",
-        "color": "white",
-        "style": "minimal",
-        "event": "office",
-    },
-    {
-        "name": "Beige Trousers",
-        "category": "bottom",
-        "color": "beige",
-        "style": "elegant",
-        "event": "office",
-    },
-    {
-        "name": "Black Loafers",
-        "category": "shoes",
-        "color": "black",
-        "style": "elegant",
-        "event": "office",
-    },
-    {
-        "name": "Blue Jeans",
-        "category": "bottom",
-        "color": "blue",
-        "style": "casual",
-        "event": "daily",
-    },
-    {
-        "name": "White Sneakers",
-        "category": "shoes",
-        "color": "white",
-        "style": "casual",
-        "event": "daily",
-    },
+    {"name": "Black Blazer", "category": "outerwear",
+        "color": "black", "style": "elegant", "event": "office"},
+    {"name": "White Shirt", "category": "top", "color": "white",
+        "style": "minimal", "event": "office"},
+    {"name": "Beige Trousers", "category": "bottom",
+        "color": "beige", "style": "elegant", "event": "office"},
+    {"name": "Black Loafers", "category": "shoes",
+        "color": "black", "style": "elegant", "event": "office"},
+    {"name": "Blue Jeans", "category": "bottom",
+        "color": "blue", "style": "casual", "event": "daily"},
+    {"name": "White Sneakers", "category": "shoes",
+        "color": "white", "style": "casual", "event": "daily"},
 ]
 
 OUTFIT_CATEGORIES = ["top", "bottom", "shoes", "outerwear", "accessory"]
@@ -74,7 +44,6 @@ OUTFIT_TO_WARDROBE_KEY = {
 
 
 def _normalize_category(category: str | None) -> str | None:
-    """Map wardrobe and legacy category names to outfit slots."""
     if not category:
         return None
 
@@ -82,7 +51,6 @@ def _normalize_category(category: str | None) -> str | None:
 
 
 def _is_disliked(item_name: str, disliked_items: list[str]) -> bool:
-    """Return True if the item matches any disliked entry."""
     item_name_lower = item_name.lower()
 
     for disliked in disliked_items:
@@ -99,27 +67,22 @@ def _score_item(
     favorite_colors: list[str],
     preferred_styles: list[str],
 ) -> int:
-    """Score a wardrobe item against the plan and saved memory."""
     score = 0
 
-    # Event match remains the strongest signal.
     if item.get("event") == plan.event:
         score += 5
 
-    # Current request style still matters.
     if item.get("style") == plan.style:
         score += 2
 
-    # Saved style preferences from memory.
     if item.get("style") in preferred_styles:
         score += 2
 
-    # Colors mentioned in the current request take priority.
     preferred_colors = plan.colors if plan.colors else favorite_colors
+
     if item.get("color") in preferred_colors:
         score += 2
 
-    # Saved favorite colors from memory.
     if item.get("color") in favorite_colors:
         score += 2
 
@@ -127,12 +90,6 @@ def _score_item(
 
 
 def _get_category_items(wardrobe: dict, outfit_category: str) -> tuple[list[dict], bool]:
-    """
-    Return the item pool for one outfit slot.
-
-    Uses wardrobe items when that category is populated; otherwise falls back
-    to DEFAULT_ITEMS for that category only.
-    """
     wardrobe_key = OUTFIT_TO_WARDROBE_KEY[outfit_category]
     wardrobe_items = list(wardrobe.get(wardrobe_key, []))
 
@@ -144,6 +101,7 @@ def _get_category_items(wardrobe: dict, outfit_category: str) -> tuple[list[dict
         for item in DEFAULT_ITEMS
         if _normalize_category(item.get("category")) == outfit_category
     ]
+
     return default_items, True
 
 
@@ -156,7 +114,6 @@ def _select_best_item(
     disliked_items: list[str],
     use_default_rules: bool,
 ) -> dict | None:
-    """Pick the highest-scoring item for a single outfit category."""
     best_item = None
     best_score = -1
 
@@ -185,8 +142,9 @@ def _select_best_item(
     return best_item
 
 
-def generate_outfit(plan, memory: dict) -> dict:
-    wardrobe = load_wardrobe()
+def generate_outfit(plan, memory: dict, wardrobe: dict | None = None) -> dict:
+    if wardrobe is None:
+        wardrobe = load_wardrobe()
 
     favorite_colors = memory.get("favorite_colors", [])
     preferred_styles = memory.get("preferred_styles", [])
@@ -198,6 +156,7 @@ def generate_outfit(plan, memory: dict) -> dict:
 
     for category in OUTFIT_CATEGORIES:
         items_pool, use_default_rules = _get_category_items(wardrobe, category)
+
         if not items_pool:
             continue
 
@@ -207,13 +166,13 @@ def generate_outfit(plan, memory: dict) -> dict:
             used_wardrobe = True
 
         best_item = _select_best_item(
-            items_pool,
-            category,
-            plan,
-            favorite_colors,
-            preferred_styles,
-            disliked_items,
-            use_default_rules,
+            items=items_pool,
+            outfit_category=category,
+            plan=plan,
+            favorite_colors=favorite_colors,
+            preferred_styles=preferred_styles,
+            disliked_items=disliked_items,
+            use_default_rules=use_default_rules,
         )
 
         if best_item:
@@ -246,21 +205,10 @@ def generate_outfit(plan, memory: dict) -> dict:
     }
 
     if not selected_items:
-        if used_wardrobe and used_defaults:
-            outfit["reason"] = (
-                "No matching items were found for this request. "
-                "Try adjusting your request or adding more clothes to your wardrobe."
-            )
-        elif used_wardrobe:
-            outfit["reason"] = (
-                "No matching items were found in your wardrobe. "
-                "Try adding more clothes or adjusting your request."
-            )
-        else:
-            outfit["reason"] = (
-                "No matching default items were found for this event. "
-                "Try adjusting your request or add clothes to your wardrobe."
-            )
+        outfit["reason"] = (
+            "No matching items were found for this request. "
+            "Try adjusting your request or adding more clothes to your wardrobe."
+        )
 
     return outfit
 
@@ -273,9 +221,10 @@ class StylistAgent(BaseAgent):
 
     def can_handle(self, plan: dict) -> bool:
         intent = plan.get("intent", "outfit_request")
+
         if intent in self._HANDLED_INTENTS:
             return True
-        # Default fallback for unrecognized intents.
+
         return intent not in {
             "memory_update",
             "inline_edit",
@@ -288,18 +237,29 @@ class StylistAgent(BaseAgent):
         self,
         user_input: str,
         plan: dict,
-        context: dict | None = None,
+        context=None,
     ) -> AgentResponse:
-        memory = (context or {}).get("memory")
-        if memory is None:
+        if context is not None:
+            memory = context.memory
+            wardrobe = context.wardrobe
+            plan_obj = context.plan
+        else:
             memory = load_memory()
+            wardrobe = load_wardrobe()
+            plan_obj = plan_from_dict(plan) if isinstance(plan, dict) else plan
 
-        plan_obj = plan_from_dict(plan) if isinstance(plan, dict) else plan
-        outfit = generate_outfit(plan_obj, memory)
+        if isinstance(plan_obj, dict):
+            plan_obj = plan_from_dict(plan_obj)
+
+        outfit = generate_outfit(
+            plan=plan_obj,
+            memory=memory,
+            wardrobe=wardrobe,
+        )
 
         return AgentResponse(
             success=True,
             agent_name=self.name,
-            message="",
+            message="Outfit generated successfully.",
             data={"outfit": outfit},
         )

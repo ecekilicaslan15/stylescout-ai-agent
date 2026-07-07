@@ -6,9 +6,11 @@ from agents.shopping_agent import ShoppingAgent
 from agents.stylist_agent import StylistAgent
 from agents.trend_agent import TrendAgent
 from agents.wardrobe_agent import WardrobeAgent
+from context.context_builder import ContextBuilder
 from memory.memory_manager import load_memory
 from models.agent_response import AgentResponse
 from models.plan import plan_to_dict
+from wardrobe.wardrobe_manager import get_all_wardrobe_items, load_wardrobe
 
 # Ordered agent sequence per intent. Multiple agents run left-to-right.
 INTENT_AGENT_SEQUENCE: dict[str, list[str]] = {
@@ -39,6 +41,14 @@ class FashionOrchestrator:
         self.agents = agents
         self.registry = {agent.name: agent for agent in agents}
 
+    @staticmethod
+    def _outfit_items(current_outfit) -> list:
+        if isinstance(current_outfit, dict):
+            return list(current_outfit.get("items", []))
+        if isinstance(current_outfit, list):
+            return list(current_outfit)
+        return []
+
     def _resolve_agent_names(self, plan_dict: dict) -> list[str]:
         intent = plan_dict.get("intent", "outfit_request")
 
@@ -54,16 +64,28 @@ class FashionOrchestrator:
     def run(self, user_input: str) -> dict:
         plan = plan_user_request(user_input)
         plan_dict = plan_to_dict(plan)
-
         memory = load_memory()
+        wardrobe = get_all_wardrobe_items(load_wardrobe())
+
+        context_builder = ContextBuilder()
+        context = context_builder.build(
+            user_input=user_input,
+            plan=plan,
+            memory=memory,
+            current_outfit=[],
+            selected_item=None,
+            wardrobe=wardrobe,
+            conversation_history=[],
+        )
+        print("AgentContext:", context)
+
         outfit = None
         message = None
-
-        context: dict = {"memory": memory}
+        agent_context: dict = {"memory": memory}
 
         for agent_name in self._resolve_agent_names(plan_dict):
             agent = self.registry[agent_name]
-            response: AgentResponse = agent.run(user_input, plan_dict, context)
+            response: AgentResponse = agent.run(user_input, plan_dict, agent_context)
 
             if not response.success:
                 if response.message:
@@ -74,7 +96,7 @@ class FashionOrchestrator:
 
             if "memory" in response.data:
                 memory = response.data["memory"]
-                context["memory"] = memory
+                agent_context["memory"] = memory
 
             if "outfit" in response.data:
                 outfit = response.data["outfit"]
@@ -97,17 +119,32 @@ class FashionOrchestrator:
     ) -> dict:
         """Run a single-item inline edit without regenerating the full outfit."""
         plan_dict = {"intent": "inline_edit"}
-        context = {
+        memory = load_memory()
+        wardrobe = get_all_wardrobe_items(load_wardrobe())
+
+        context_builder = ContextBuilder()
+        context = context_builder.build(
+            user_input=instruction,
+            plan=plan_dict,
+            memory=memory,
+            current_outfit=self._outfit_items(current_outfit),
+            selected_item=target_item,
+            wardrobe=wardrobe,
+            conversation_history=[],
+        )
+        print("AgentContext:", context)
+
+        agent_context = {
             "current_outfit": current_outfit,
             "target_item": target_item,
             "instruction": instruction,
-            "memory": load_memory(),
+            "memory": memory,
         }
 
         response: AgentResponse = self.registry["inline_edit_agent"].run(
             instruction,
             plan_dict,
-            context,
+            agent_context,
         )
 
         return {
