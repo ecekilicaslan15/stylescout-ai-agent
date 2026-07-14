@@ -1,7 +1,10 @@
 from agents.base_agent import BaseAgent
 from agents.detectors.color_detector import detect_colors
+from context.runtime_helpers import resolve_memory, resolve_wardrobe
+from models.agent_context import AgentContext
 from models.agent_response import AgentResponse
-from wardrobe.wardrobe_manager import load_wardrobe
+from wardrobe.json_wardrobe_repository import JsonWardrobeRepository
+from wardrobe.wardrobe_repository import WardrobeRepository
 
 OUTFIT_TO_WARDROBE_KEY = {
     "top": "tops",
@@ -63,6 +66,9 @@ class WardrobeAgent(BaseAgent):
     name = "wardrobe_agent"
     description = "Searches the user's wardrobe for items by category and style."
 
+    def __init__(self, wardrobe_repository: WardrobeRepository | None = None) -> None:
+        self._wardrobe_repository = wardrobe_repository or JsonWardrobeRepository()
+
     def can_handle(self, plan: dict) -> bool:
         return plan.get("intent") == "wardrobe_search"
 
@@ -72,6 +78,8 @@ class WardrobeAgent(BaseAgent):
         target_style: str,
         memory: dict | None = None,
         instruction: str = "",
+        wardrobe: list | dict | None = None,
+        wardrobe_repository: WardrobeRepository | None = None,
     ) -> AgentResponse:
         """Find the best wardrobe replacement for a single outfit item."""
         return self.run(
@@ -83,6 +91,8 @@ class WardrobeAgent(BaseAgent):
                 "target_style": target_style,
                 "memory": memory or {},
                 "instruction": instruction,
+                "wardrobe": wardrobe,
+                "wardrobe_repository": wardrobe_repository,
             },
         )
 
@@ -90,10 +100,18 @@ class WardrobeAgent(BaseAgent):
         self,
         user_input: str,
         plan: dict,
-        context: dict | None = None,
+        context: AgentContext | dict | None = None,
     ) -> AgentResponse:
-        context = context or {}
+        if not isinstance(context, dict):
+            context = {}
+
         action = context.get("action")
+        target_item = context.get("target_item")
+        target_style = context.get("target_style")
+        memory = resolve_memory(context.get("memory"))
+        instruction = context.get("instruction") or user_input
+        repository = context.get("wardrobe_repository") or self._wardrobe_repository
+        wardrobe = resolve_wardrobe(context.get("wardrobe"), repository)
 
         if action != "find_replacement":
             return AgentResponse(
@@ -104,11 +122,6 @@ class WardrobeAgent(BaseAgent):
                 error=f"Unknown action: {action}",
             )
 
-        target_item = context.get("target_item")
-        target_style = context.get("target_style")
-        memory = context.get("memory") or {}
-        instruction = context.get("instruction") or user_input
-
         if not target_item or not target_style:
             return AgentResponse(
                 success=False,
@@ -118,7 +131,6 @@ class WardrobeAgent(BaseAgent):
                 error="Missing target_item or target_style.",
             )
 
-        wardrobe = load_wardrobe()
         category_items = self._get_category_items(wardrobe, target_item)
         outfit_category = _normalize_category(target_item.get("category"))
 

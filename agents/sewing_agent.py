@@ -1,4 +1,5 @@
 from agents.base_agent import BaseAgent
+from models.agent_context import AgentContext
 from models.agent_response import AgentResponse
 
 
@@ -13,7 +14,7 @@ class SewingAgent(BaseAgent):
         self,
         user_input: str,
         plan: dict,
-        context: dict | None = None,
+        context: AgentContext | dict | None = None,
     ) -> AgentResponse:
         return AgentResponse(
             success=True,

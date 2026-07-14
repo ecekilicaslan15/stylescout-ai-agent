@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+from models.agent_context import AgentContext
 from models.agent_response import AgentResponse
 
 
@@ -18,7 +19,7 @@ class BaseAgent(ABC):
         self,
         user_input: str,
         plan: dict,
-        context: dict | None = None,
+        context: AgentContext | dict | None = None,
     ) -> AgentResponse:
         """
         Execute agent logic.

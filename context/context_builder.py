@@ -1,4 +1,5 @@
 from models.agent_context import AgentContext
+from wardrobe.wardrobe_repository import WardrobeRepository
 
 
 class ContextBuilder:
@@ -13,6 +14,7 @@ class ContextBuilder:
         selected_item=None,
         wardrobe=None,
         conversation_history=None,
+        wardrobe_repository: WardrobeRepository | None = None,
     ) -> AgentContext:
         return AgentContext(
             user_input=user_input,
@@ -22,4 +24,5 @@ class ContextBuilder:
             selected_item=selected_item,
             wardrobe=wardrobe if wardrobe is not None else [],
             conversation_history=conversation_history if conversation_history is not None else [],
+            wardrobe_repository=wardrobe_repository,
         )

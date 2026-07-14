@@ -10,7 +10,8 @@ from context.context_builder import ContextBuilder
 from memory.memory_manager import load_memory
 from models.agent_response import AgentResponse
 from models.plan import plan_to_dict
-from wardrobe.wardrobe_manager import get_all_wardrobe_items, load_wardrobe
+from wardrobe.json_wardrobe_repository import JsonWardrobeRepository
+from wardrobe.wardrobe_repository import WardrobeRepository
 
 # Ordered agent sequence per intent. Multiple agents run left-to-right.
 INTENT_AGENT_SEQUENCE: dict[str, list[str]] = {
@@ -27,11 +28,12 @@ INTENT_AGENT_SEQUENCE: dict[str, list[str]] = {
 class FashionOrchestrator:
     """Routes user requests to the correct agent(s) based on plan intent."""
 
-    def __init__(self) -> None:
-        wardrobe_agent = WardrobeAgent()
+    def __init__(self, wardrobe_repository: WardrobeRepository | None = None) -> None:
+        self._wardrobe_repository = wardrobe_repository or JsonWardrobeRepository()
+        wardrobe_agent = WardrobeAgent(wardrobe_repository=self._wardrobe_repository)
         agents = [
             MemoryAgent(),
-            StylistAgent(),
+            StylistAgent(wardrobe_repository=self._wardrobe_repository),
             InlineEditAgent(wardrobe_agent=wardrobe_agent),
             wardrobe_agent,
             SewingAgent(),
@@ -65,7 +67,7 @@ class FashionOrchestrator:
         plan = plan_user_request(user_input)
         plan_dict = plan_to_dict(plan)
         memory = load_memory()
-        wardrobe = get_all_wardrobe_items(load_wardrobe())
+        wardrobe = self._wardrobe_repository.get_all()
 
         context_builder = ContextBuilder()
         context = context_builder.build(
@@ -76,9 +78,8 @@ class FashionOrchestrator:
             selected_item=None,
             wardrobe=wardrobe,
             conversation_history=[],
+            wardrobe_repository=self._wardrobe_repository,
         )
-        print("AgentContext:", context)
-
         outfit = None
         message = None
         stylist_notes = None
@@ -124,7 +125,7 @@ class FashionOrchestrator:
         """Run a single-item inline edit without regenerating the full outfit."""
         plan_dict = {"intent": "inline_edit"}
         memory = load_memory()
-        wardrobe = get_all_wardrobe_items(load_wardrobe())
+        wardrobe = self._wardrobe_repository.get_all()
 
         context_builder = ContextBuilder()
         context = context_builder.build(
@@ -135,20 +136,13 @@ class FashionOrchestrator:
             selected_item=target_item,
             wardrobe=wardrobe,
             conversation_history=[],
+            wardrobe_repository=self._wardrobe_repository,
         )
-        print("AgentContext:", context)
-
-        agent_context = {
-            "current_outfit": current_outfit,
-            "target_item": target_item,
-            "instruction": instruction,
-            "memory": memory,
-        }
 
         response: AgentResponse = self.registry["inline_edit_agent"].run(
             instruction,
             plan_dict,
-            agent_context,
+            context,
         )
 
         return {

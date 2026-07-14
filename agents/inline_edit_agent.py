@@ -1,5 +1,7 @@
 from agents.base_agent import BaseAgent
 from agents.wardrobe_agent import WardrobeAgent
+from context.runtime_helpers import resolve_memory
+from models.agent_context import AgentContext
 from models.agent_response import AgentResponse
 
 
@@ -10,6 +12,32 @@ def _detect_target_style(instruction: str) -> str | None:
     if "casual" in text:
         return "casual"
     return None
+
+
+def _resolve_inline_edit_fields(
+    context: AgentContext | dict | None,
+    user_input: str,
+) -> dict:
+    """Extract inline-edit fields from AgentContext or a legacy dict."""
+    if isinstance(context, AgentContext):
+        return {
+            "current_outfit": context.current_outfit,
+            "target_item": context.selected_item,
+            "instruction": context.user_input or user_input,
+            "memory": resolve_memory(context.memory),
+            "wardrobe": context.wardrobe,
+            "wardrobe_repository": context.wardrobe_repository,
+        }
+
+    context = context or {}
+    return {
+        "current_outfit": context.get("current_outfit"),
+        "target_item": context.get("target_item"),
+        "instruction": context.get("instruction") or user_input,
+        "memory": resolve_memory(context.get("memory")),
+        "wardrobe": context.get("wardrobe"),
+        "wardrobe_repository": context.get("wardrobe_repository"),
+    }
 
 
 class InlineEditAgent(BaseAgent):
@@ -26,13 +54,13 @@ class InlineEditAgent(BaseAgent):
         self,
         user_input: str,
         plan: dict,
-        context: dict | None = None,
+        context: AgentContext | dict | None = None,
     ) -> AgentResponse:
-        context = context or {}
-        current_outfit = context.get("current_outfit")
-        target_item = context.get("target_item")
-        instruction = context.get("instruction") or user_input
-        memory = context.get("memory") or {}
+        fields = _resolve_inline_edit_fields(context, user_input)
+        current_outfit = fields["current_outfit"]
+        target_item = fields["target_item"]
+        instruction = fields["instruction"]
+        memory = fields["memory"]
 
         if current_outfit is None or target_item is None:
             return AgentResponse(
@@ -80,6 +108,8 @@ class InlineEditAgent(BaseAgent):
             target_style=target_style,
             memory=memory,
             instruction=instruction,
+            wardrobe=fields["wardrobe"],
+            wardrobe_repository=fields.get("wardrobe_repository"),
         )
 
         replacement = wardrobe_response.data.get("replacement_item")

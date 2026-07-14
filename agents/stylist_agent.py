@@ -1,12 +1,15 @@
 from pathlib import Path
 
+from context.runtime_helpers import resolve_memory, resolve_plan, resolve_wardrobe
+from wardrobe.json_wardrobe_repository import JsonWardrobeRepository
 from wardrobe.wardrobe_manager import load_wardrobe
+from wardrobe.wardrobe_repository import WardrobeRepository
 
 from agents.base_agent import BaseAgent
 from memory.memory_manager import load_memory
 from models.agent_context import AgentContext
 from models.agent_response import AgentResponse
-from models.plan import Plan, plan_from_dict
+from models.plan import Plan
 from services.rag_service import RagService
 from services.stylist_notes_builder import build_knowledge_query, build_stylist_notes
 
@@ -226,8 +229,13 @@ class StylistAgent(BaseAgent):
 
     _HANDLED_INTENTS = {"outfit_request", "outfit_request_with_memory_update"}
 
-    def __init__(self, rag_service: RagService | None = None) -> None:
+    def __init__(
+        self,
+        rag_service: RagService | None = None,
+        wardrobe_repository: WardrobeRepository | None = None,
+    ) -> None:
         self._rag_service = rag_service or RagService(KNOWLEDGE_DIR)
+        self._wardrobe_repository = wardrobe_repository or JsonWardrobeRepository()
 
     def can_handle(self, plan: dict) -> bool:
         intent = plan.get("intent", "outfit_request")
@@ -280,41 +288,24 @@ class StylistAgent(BaseAgent):
     ) -> tuple[dict, dict, Plan, str]:
         """Resolve memory, wardrobe, plan, and query text without affecting outfit scoring."""
         if isinstance(context, AgentContext):
-            memory = context.memory or load_memory()
-            wardrobe = self._resolve_wardrobe(context.wardrobe)
-            plan_obj = context.plan
+            repository = context.wardrobe_repository or self._wardrobe_repository
+            memory = resolve_memory(context.memory)
+            wardrobe = resolve_wardrobe(context.wardrobe, repository)
+            plan_obj = resolve_plan(plan, context)
             query_input = context.user_input or user_input
         elif isinstance(context, dict):
-            memory = context.get("memory") or load_memory()
-            wardrobe = self._resolve_wardrobe(context.get("wardrobe"))
-            plan_obj = plan_from_dict(plan) if isinstance(plan, dict) else plan
+            repository = context.get("wardrobe_repository") or self._wardrobe_repository
+            memory = resolve_memory(context.get("memory"))
+            wardrobe = resolve_wardrobe(context.get("wardrobe"), repository)
+            plan_obj = resolve_plan(plan, context)
             query_input = user_input
         else:
             memory = load_memory()
-            wardrobe = load_wardrobe()
-            plan_obj = plan_from_dict(plan) if isinstance(plan, dict) else plan
+            wardrobe = resolve_wardrobe(None, self._wardrobe_repository)
+            plan_obj = resolve_plan(plan, context)
             query_input = user_input
 
-        if isinstance(plan_obj, dict):
-            plan_obj = plan_from_dict(plan_obj)
-
         return memory, wardrobe, plan_obj, query_input
-
-    @staticmethod
-    def _resolve_wardrobe(wardrobe: list | dict | None) -> dict:
-        """Use context wardrobe when provided; load from disk only as fallback."""
-        if wardrobe is None:
-            return load_wardrobe()
-        if isinstance(wardrobe, dict):
-            return wardrobe
-        if isinstance(wardrobe, list):
-            grouped = {key: [] for key in OUTFIT_TO_WARDROBE_KEY.values()}
-            for item in wardrobe:
-                category = item.get("category")
-                if category in grouped:
-                    grouped[category].append(item)
-            return grouped
-        return load_wardrobe()
 
     def _retrieve_stylist_notes(self, user_input: str, plan_obj: Plan) -> str:
         """Retrieve fashion knowledge after outfit generation and format stylist notes."""

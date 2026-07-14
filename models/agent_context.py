@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from typing import Any
 
+from wardrobe.wardrobe_repository import WardrobeRepository
+
 
 @dataclass
 class AgentContext:
@@ -11,3 +13,4 @@ class AgentContext:
     selected_item: dict | None = None
     wardrobe: list = field(default_factory=list)
     conversation_history: list = field(default_factory=list)
+    wardrobe_repository: WardrobeRepository | None = None

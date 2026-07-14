@@ -1,7 +1,8 @@
 from agents.base_agent import BaseAgent
+from context.runtime_helpers import resolve_plan
 from memory.memory_manager import update_memory_from_plan
+from models.agent_context import AgentContext
 from models.agent_response import AgentResponse
-from models.plan import plan_from_dict
 
 
 class MemoryAgent(BaseAgent):
@@ -17,9 +18,10 @@ class MemoryAgent(BaseAgent):
         self,
         user_input: str,
         plan: dict,
-        context: dict | None = None,
+        context: AgentContext | dict | None = None,
     ) -> AgentResponse:
-        memory = update_memory_from_plan(plan_from_dict(plan))
+        plan_obj = resolve_plan(plan, context)
+        memory = update_memory_from_plan(plan_obj)
 
         return AgentResponse(
             success=True,
