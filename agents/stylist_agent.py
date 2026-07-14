@@ -1,9 +1,16 @@
+from pathlib import Path
+
 from wardrobe.wardrobe_manager import load_wardrobe
 
 from agents.base_agent import BaseAgent
 from memory.memory_manager import load_memory
+from models.agent_context import AgentContext
 from models.agent_response import AgentResponse
-from models.plan import plan_from_dict
+from models.plan import Plan, plan_from_dict
+from services.rag_service import RagService
+from services.stylist_notes_builder import build_knowledge_query, build_stylist_notes
+
+KNOWLEDGE_DIR = Path(__file__).resolve().parent.parent / "knowledge"
 
 
 DEFAULT_ITEMS = [
@@ -219,6 +226,9 @@ class StylistAgent(BaseAgent):
 
     _HANDLED_INTENTS = {"outfit_request", "outfit_request_with_memory_update"}
 
+    def __init__(self, rag_service: RagService | None = None) -> None:
+        self._rag_service = rag_service or RagService(KNOWLEDGE_DIR)
+
     def can_handle(self, plan: dict) -> bool:
         intent = plan.get("intent", "outfit_request")
 
@@ -237,19 +247,11 @@ class StylistAgent(BaseAgent):
         self,
         user_input: str,
         plan: dict,
-        context=None,
+        context: AgentContext | dict | None = None,
     ) -> AgentResponse:
-        if context is not None:
-            memory = context.memory
-            wardrobe = context.wardrobe
-            plan_obj = context.plan
-        else:
-            memory = load_memory()
-            wardrobe = load_wardrobe()
-            plan_obj = plan_from_dict(plan) if isinstance(plan, dict) else plan
-
-        if isinstance(plan_obj, dict):
-            plan_obj = plan_from_dict(plan_obj)
+        memory, wardrobe, plan_obj, query_input = self._resolve_runtime(
+            user_input, plan, context
+        )
 
         outfit = generate_outfit(
             plan=plan_obj,
@@ -257,9 +259,65 @@ class StylistAgent(BaseAgent):
             wardrobe=wardrobe,
         )
 
+        stylist_notes = self._retrieve_stylist_notes(query_input, plan_obj)
+
+        response_data = {"outfit": outfit}
+        if stylist_notes:
+            response_data["stylist_notes"] = stylist_notes
+
         return AgentResponse(
             success=True,
             agent_name=self.name,
             message="Outfit generated successfully.",
-            data={"outfit": outfit},
+            data=response_data,
         )
+
+    def _resolve_runtime(
+        self,
+        user_input: str,
+        plan: dict,
+        context: AgentContext | dict | None,
+    ) -> tuple[dict, dict, Plan, str]:
+        """Resolve memory, wardrobe, plan, and query text without affecting outfit scoring."""
+        if isinstance(context, AgentContext):
+            memory = context.memory or load_memory()
+            wardrobe = self._resolve_wardrobe(context.wardrobe)
+            plan_obj = context.plan
+            query_input = context.user_input or user_input
+        elif isinstance(context, dict):
+            memory = context.get("memory") or load_memory()
+            wardrobe = self._resolve_wardrobe(context.get("wardrobe"))
+            plan_obj = plan_from_dict(plan) if isinstance(plan, dict) else plan
+            query_input = user_input
+        else:
+            memory = load_memory()
+            wardrobe = load_wardrobe()
+            plan_obj = plan_from_dict(plan) if isinstance(plan, dict) else plan
+            query_input = user_input
+
+        if isinstance(plan_obj, dict):
+            plan_obj = plan_from_dict(plan_obj)
+
+        return memory, wardrobe, plan_obj, query_input
+
+    @staticmethod
+    def _resolve_wardrobe(wardrobe: list | dict | None) -> dict:
+        """Use context wardrobe when provided; load from disk only as fallback."""
+        if wardrobe is None:
+            return load_wardrobe()
+        if isinstance(wardrobe, dict):
+            return wardrobe
+        if isinstance(wardrobe, list):
+            grouped = {key: [] for key in OUTFIT_TO_WARDROBE_KEY.values()}
+            for item in wardrobe:
+                category = item.get("category")
+                if category in grouped:
+                    grouped[category].append(item)
+            return grouped
+        return load_wardrobe()
+
+    def _retrieve_stylist_notes(self, user_input: str, plan_obj: Plan) -> str:
+        """Retrieve fashion knowledge after outfit generation and format stylist notes."""
+        knowledge_query = build_knowledge_query(user_input, plan_obj)
+        chunks = self._rag_service.retrieve(knowledge_query, top_k=3)
+        return build_stylist_notes(chunks)

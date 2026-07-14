@@ -81,11 +81,11 @@ class FashionOrchestrator:
 
         outfit = None
         message = None
-        agent_context: dict = {"memory": memory}
+        stylist_notes = None
 
         for agent_name in self._resolve_agent_names(plan_dict):
             agent = self.registry[agent_name]
-            response: AgentResponse = agent.run(user_input, plan_dict, agent_context)
+            response: AgentResponse = agent.run(user_input, plan_dict, context)
 
             if not response.success:
                 if response.message:
@@ -96,10 +96,13 @@ class FashionOrchestrator:
 
             if "memory" in response.data:
                 memory = response.data["memory"]
-                agent_context["memory"] = memory
+                context.memory = memory
 
             if "outfit" in response.data:
                 outfit = response.data["outfit"]
+
+            if response.data.get("stylist_notes"):
+                stylist_notes = response.data["stylist_notes"]
 
             if response.message:
                 message = response.message
@@ -109,6 +112,7 @@ class FashionOrchestrator:
             "memory": memory,
             "outfit": outfit,
             "message": message,
+            "stylist_notes": stylist_notes,
         }
 
     def run_inline_edit(

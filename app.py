@@ -1,9 +1,13 @@
 import streamlit as st
+from pathlib import Path
 
 from memory.memory_store import load_memory, update_memory_from_input
 from models.agent_response import AgentResponse
 from orchestrator.fashion_orchestrator import run_fashion_agent, run_inline_edit
+from services.rag_service import RagService
 from wardrobe.wardrobe_manager import load_wardrobe, update_wardrobe_from_input
+
+KNOWLEDGE_DIR = Path(__file__).resolve().parent / "knowledge"
 
 
 def _to_agent_response(result: dict) -> AgentResponse:
@@ -99,6 +103,12 @@ def render_section_label(title: str) -> None:
         f'<p class="section-label">{title}</p>',
         unsafe_allow_html=True,
     )
+
+
+@st.cache_resource
+def get_rag_service() -> RagService:
+    """Create one RagService instance for the Streamlit session."""
+    return RagService(KNOWLEDGE_DIR)
 
 
 st.markdown(
@@ -471,6 +481,7 @@ if generate_clicked:
                     "memory": memory,
                     "wardrobe": wardrobe,
                     "status_messages": status_messages,
+                    "stylist_notes": result.get("stylist_notes"),
                 }
                 st.session_state.inline_edit_feedback = None
             else:
@@ -572,6 +583,21 @@ if st.session_state.get("current_outfit"):
                     Stylist Notes
                 </p>
                 <p class="reason-text">{outfit["reason"]}</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    stylist_notes = st.session_state.display_result.get("stylist_notes") if st.session_state.display_result else None
+    if stylist_notes:
+        st.markdown(
+            f"""
+            <div class="reason-card">
+                <p class="section-label">Knowledge Notes</p>
+                <p class="card-title" style="font-size:1.2rem; margin-bottom:0.5rem;">
+                    Fabric & Style Context
+                </p>
+                <p class="reason-text">{stylist_notes}</p>
             </div>
             """,
             unsafe_allow_html=True,
@@ -699,3 +725,49 @@ if st.session_state.display_result:
         unsafe_allow_html=True,
     )
     st.markdown("</div>", unsafe_allow_html=True)
+
+st.divider()
+
+with st.container(border=True):
+    render_section_label("Fashion Knowledge Search")
+    st.markdown(
+        '<p class="card-title">Fashion Knowledge Search</p>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<p class="card-copy">Development demo for the local keyword-based RAG service. '
+        "Search fabric and fashion knowledge without affecting the main outfit flow.</p>",
+        unsafe_allow_html=True,
+    )
+
+    rag_query = st.text_input(
+        "Fashion knowledge question",
+        placeholder="What fabric is suitable for hot weather?",
+        key="rag_query",
+    )
+
+    search_fashion_knowledge = st.button(
+        "Search Fashion Knowledge",
+        key="search_fashion_knowledge",
+    )
+
+    if search_fashion_knowledge:
+        if not rag_query.strip():
+            st.warning("Please enter a fashion-related question.")
+        else:
+            rag_service = get_rag_service()
+            results = rag_service.retrieve(rag_query.strip(), top_k=3)
+
+            if not results:
+                st.info("No relevant knowledge chunks were found for that question.")
+            else:
+                for index, result in enumerate(results, start=1):
+                    with st.expander(
+                        f"Result {index}: {result.heading} ({result.source})",
+                        expanded=index == 1,
+                    ):
+                        st.markdown(f"**Heading:** {result.heading}")
+                        st.markdown(f"**Source:** {result.source}")
+                        st.markdown(f"**Score:** {result.score}")
+                        st.markdown("**Content:**")
+                        st.write(result.content)
