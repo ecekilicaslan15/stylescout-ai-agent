@@ -4,7 +4,7 @@ from memory.memory_manager import load_memory
 from models.agent_context import AgentContext
 from models.plan import Plan, plan_from_dict
 from wardrobe.constants import CATEGORIES
-from wardrobe.json_wardrobe_repository import JsonWardrobeRepository
+from wardrobe.repository_factory import create_wardrobe_repository
 from wardrobe.wardrobe_manager import load_wardrobe
 from wardrobe.wardrobe_repository import WardrobeRepository
 
@@ -51,8 +51,6 @@ def resolve_plan(plan, context: AgentContext | dict | None) -> Plan:
     return plan_from_dict(plan_obj)
 
 
-def default_wardrobe_repository() -> JsonWardrobeRepository:
-    """Return the shared JSON repository used by backward-compatible helpers."""
-    from wardrobe.wardrobe_manager import _get_default_repository
-
-    return _get_default_repository()
+def default_wardrobe_repository() -> WardrobeRepository:
+    """Return the default wardrobe repository for backward-compatible helpers."""
+    return create_wardrobe_repository()

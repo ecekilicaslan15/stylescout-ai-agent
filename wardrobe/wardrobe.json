@@ -4,31 +4,36 @@
             "name": "White Elegant Shirt",
             "category": "tops",
             "color": "white",
-            "style": "elegant"
+            "style": "elegant",
+            "image_url": "https://images.unsplash.com/photo-1596755094514-f87e34085b2b?w=520&q=80"
         },
         {
             "name": "Black Elegant Shirt",
             "category": "tops",
             "color": "black",
-            "style": "elegant"
+            "style": "elegant",
+            "image_url": "https://images.unsplash.com/photo-1602810318383-0dda8ae73780?w=520&q=80"
         },
         {
             "name": "Casual White T-Shirt",
             "category": "tops",
             "color": "white",
-            "style": "casual"
+            "style": "casual",
+            "image_url": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=520&q=80"
         },
         {
             "name": "Navy Blouse",
             "category": "tops",
             "color": "navy",
-            "style": "elegant"
+            "style": "elegant",
+            "image_url": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=520&q=80"
         },
         {
             "name": "Pink Blouse",
             "category": "tops",
             "color": "pink",
-            "style": "elegant"
+            "style": "elegant",
+            "image_url": "https://images.unsplash.com/photo-1582552938352-1763f3952ced?w=520&q=80"
         }
     ],
     "bottoms": [
@@ -36,37 +41,43 @@
             "name": "Beige Tailored Trousers",
             "category": "bottoms",
             "color": "beige",
-            "style": "elegant"
+            "style": "elegant",
+            "image_url": "https://images.unsplash.com/photo-1624373515198-049ae905ddeb?w=520&q=80"
         },
         {
             "name": "Black Tailored Trousers",
             "category": "bottoms",
             "color": "black",
-            "style": "elegant"
+            "style": "elegant",
+            "image_url": "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=520&q=80"
         },
         {
             "name": "Blue Jeans",
             "category": "bottoms",
             "color": "blue",
-            "style": "casual"
+            "style": "casual",
+            "image_url": "https://images.unsplash.com/photo-1542272604-787c3835535d?w=520&q=80"
         },
         {
             "name": "Black Jeans",
             "category": "bottoms",
             "color": "black",
-            "style": "casual"
+            "style": "casual",
+            "image_url": "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=520&q=80"
         },
         {
             "name": "Navy Skirt",
             "category": "bottoms",
             "color": "navy",
-            "style": "elegant"
+            "style": "elegant",
+            "image_url": "https://images.unsplash.com/photo-1583498257823-83f4fdfbaf4a?w=520&q=80"
         },
         {
             "name": "Beige Skirt",
             "category": "bottoms",
             "color": "beige",
-            "style": "elegant"
+            "style": "elegant",
+            "image_url": "https://images.unsplash.com/photo-159136086677ef9fa8a47c1f0?w=520&q=80"
         }
     ],
     "shoes": [
@@ -74,43 +85,50 @@
             "name": "Black Heels",
             "category": "shoes",
             "color": "black",
-            "style": "elegant"
+            "style": "elegant",
+            "image_url": "https://images.unsplash.com/photo-1543163521-1bf539c55dc2?w=520&q=80"
         },
         {
             "name": "Beige Heels",
             "category": "shoes",
             "color": "beige",
-            "style": "elegant"
+            "style": "elegant",
+            "image_url": "https://images.unsplash.com/photo-1515342874599-b60599f8d350?w=520&q=80"
         },
         {
             "name": "Black Loafers",
             "category": "shoes",
             "color": "black",
-            "style": "elegant"
+            "style": "elegant",
+            "image_url": "https://images.unsplash.com/photo-1533860876773-56c4274edcd7?w=520&q=80"
         },
         {
             "name": "White Sneakers",
             "category": "shoes",
             "color": "white",
-            "style": "casual"
+            "style": "casual",
+            "image_url": "https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=520&q=80"
         },
         {
             "name": "Black Sneakers",
             "category": "shoes",
             "color": "black",
-            "style": "casual"
+            "style": "casual",
+            "image_url": "https://images.unsplash.com/photo-1595950653102-6c7506a63497?w=520&q=80"
         },
         {
             "name": "Brown Boots",
             "category": "shoes",
             "color": "brown",
-            "style": "casual"
+            "style": "casual",
+            "image_url": "https://images.unsplash.com/photo-1608256896670-ee1652783295?w=520&q=80"
         },
         {
             "name": "Black Boots",
             "category": "shoes",
             "color": "black",
-            "style": "elegant"
+            "style": "elegant",
+            "image_url": "https://images.unsplash.com/photo-1638244389020-ca63a7c512be?w=520&q=80"
         }
     ],
     "outerwear": [
@@ -118,31 +136,36 @@
             "name": "Black Blazer",
             "category": "outerwear",
             "color": "black",
-            "style": "elegant"
+            "style": "elegant",
+            "image_url": "https://images.unsplash.com/photo-1507679799987-c737795e771a?w=520&q=80"
         },
         {
             "name": "Beige Blazer",
             "category": "outerwear",
             "color": "beige",
-            "style": "elegant"
+            "style": "elegant",
+            "image_url": "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=520&q=80"
         },
         {
             "name": "Grey Cardigan",
             "category": "outerwear",
             "color": "gray",
-            "style": "casual"
+            "style": "casual",
+            "image_url": "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=520&q=80"
         },
         {
             "name": "Beige Trench Coat",
             "category": "outerwear",
             "color": "beige",
-            "style": "elegant"
+            "style": "elegant",
+            "image_url": "https://images.unsplash.com/photo-1576871334434-04017c14af8b?w=520&q=80"
         },
         {
             "name": "Navy Trench Coat",
             "category": "outerwear",
             "color": "navy",
-            "style": "elegant"
+            "style": "elegant",
+            "image_url": "https://images.unsplash.com/photo-1539533018447-843e46786672?w=520&q=80"
         }
     ],
     "accessories": [
@@ -150,31 +173,36 @@
             "name": "Minimal Gold Necklace",
             "category": "accessories",
             "color": "gold",
-            "style": "elegant"
+            "style": "elegant",
+            "image_url": "https://images.unsplash.com/photo-1515566607541-a3c25d5e7d59?w=520&q=80"
         },
         {
             "name": "Silk Scarf",
             "category": "accessories",
             "color": "beige",
-            "style": "elegant"
+            "style": "elegant",
+            "image_url": "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=520&q=80"
         },
         {
             "name": "Black Belt",
             "category": "accessories",
             "color": "black",
-            "style": "elegant"
+            "style": "elegant",
+            "image_url": "https://images.unsplash.com/photo-1624225172865-aa8e378375cc?w=520&q=80"
         },
         {
             "name": "Casual Crossbody Bag",
             "category": "accessories",
             "color": "brown",
-            "style": "casual"
+            "style": "casual",
+            "image_url": "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=520&q=80"
         },
         {
             "name": "Structured Handbag",
             "category": "accessories",
             "color": "black",
-            "style": "elegant"
+            "style": "elegant",
+            "image_url": "https://images.unsplash.com/photo-1584917865442-de89ab76b7cb?w=520&q=80"
         }
     ]
 }

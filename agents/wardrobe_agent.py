@@ -3,7 +3,7 @@ from agents.detectors.color_detector import detect_colors
 from context.runtime_helpers import resolve_memory, resolve_wardrobe
 from models.agent_context import AgentContext
 from models.agent_response import AgentResponse
-from wardrobe.json_wardrobe_repository import JsonWardrobeRepository
+from wardrobe.repository_factory import create_wardrobe_repository
 from wardrobe.wardrobe_repository import WardrobeRepository
 
 OUTFIT_TO_WARDROBE_KEY = {
@@ -67,7 +67,7 @@ class WardrobeAgent(BaseAgent):
     description = "Searches the user's wardrobe for items by category and style."
 
     def __init__(self, wardrobe_repository: WardrobeRepository | None = None) -> None:
-        self._wardrobe_repository = wardrobe_repository or JsonWardrobeRepository()
+        self._wardrobe_repository = wardrobe_repository or create_wardrobe_repository()
 
     def can_handle(self, plan: dict) -> bool:
         return plan.get("intent") == "wardrobe_search"

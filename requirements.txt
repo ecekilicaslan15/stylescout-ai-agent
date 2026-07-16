@@ -2,3 +2,5 @@ streamlit
 pytest
 python-dotenv
 requests
+fastapi
+uvicorn[standard]

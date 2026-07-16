@@ -1,18 +1,17 @@
 import re
-from pathlib import Path
 
 from wardrobe.constants import CATEGORIES
-from wardrobe.json_wardrobe_repository import JsonWardrobeRepository
+from wardrobe.normalization import normalize_color
+from wardrobe.repository_factory import create_wardrobe_repository
+from wardrobe.wardrobe_repository import WardrobeRepository
 
-WARDROBE_PATH = Path("wardrobe/wardrobe.json")
-
-_default_repository: JsonWardrobeRepository | None = None
+_default_repository: WardrobeRepository | None = None
 
 
-def _get_default_repository() -> JsonWardrobeRepository:
+def _get_default_repository() -> WardrobeRepository:
     global _default_repository
     if _default_repository is None:
-        _default_repository = JsonWardrobeRepository(WARDROBE_PATH)
+        _default_repository = create_wardrobe_repository()
     return _default_repository
 
 ADD_PHRASES = [
@@ -102,10 +101,6 @@ def is_wardrobe_empty(wardrobe: dict | None = None) -> bool:
     return all(not wardrobe.get(category) for category in CATEGORIES)
 
 
-def _normalize_color(color: str) -> str:
-    return "grey" if color == "gray" else color
-
-
 def add_item_to_wardrobe(category: str, item: dict) -> bool:
     """Add an item to a wardrobe category. Returns False for duplicates."""
     return _get_default_repository().add_item(category, item)
@@ -127,7 +122,7 @@ def _detect_category_and_keyword(text: str) -> tuple[str | None, str | None]:
 def _detect_color(text: str) -> str | None:
     for color in COLORS:
         if re.search(rf"\b{re.escape(color)}\b", text):
-            return _normalize_color(color)
+            return normalize_color(color)
 
     return None
 

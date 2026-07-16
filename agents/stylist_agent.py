@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from context.runtime_helpers import resolve_memory, resolve_plan, resolve_wardrobe
-from wardrobe.json_wardrobe_repository import JsonWardrobeRepository
+from wardrobe.repository_factory import create_wardrobe_repository
 from wardrobe.wardrobe_manager import load_wardrobe
 from wardrobe.wardrobe_repository import WardrobeRepository
 
@@ -235,7 +235,7 @@ class StylistAgent(BaseAgent):
         wardrobe_repository: WardrobeRepository | None = None,
     ) -> None:
         self._rag_service = rag_service or RagService(KNOWLEDGE_DIR)
-        self._wardrobe_repository = wardrobe_repository or JsonWardrobeRepository()
+        self._wardrobe_repository = wardrobe_repository or create_wardrobe_repository()
 
     def can_handle(self, plan: dict) -> bool:
         intent = plan.get("intent", "outfit_request")

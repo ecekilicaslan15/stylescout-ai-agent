@@ -366,7 +366,7 @@ input{font-family:var(--font-body);}
     <header class="wardrobe-head">
       <div>
         <span style="font-family:var(--font-display);font-weight:500;font-size:30px;letter-spacing:-0.01em;">My wardrobe</span>
-        <span class="item-count" id="count">12 items</span>
+        <span class="item-count" id="count">Loading…</span>
       </div>
       <button class="btn-sm btn-add">+ Add item</button>
     </header>
@@ -479,30 +479,16 @@ input{font-family:var(--font-body);}
 
 <script>
 /* ============================================================
-   MOCK DATA — matches backend WardrobeItem schema:
-   { id, user_id, name, category, color, style, event,
-     image_url, created_at, updated_at }
+   WARDROBE DATA — loaded from GET /api/wardrobe/items
    ============================================================ */
-const USER_ID = "user_001";
-const wardrobeItems = [
-  { id:"itm_01", user_id:USER_ID, name:"Camel wool coat",      category:"Outerwear",   color:"camel", style:"minimal",  event:"work",    image_url:"https://images.unsplash.com/photo-1551028719-00167b16eac5?w=520&q=80",  created_at:"2026-06-02T10:12:00Z", updated_at:"2026-07-01T08:00:00Z" },
-  { id:"itm_02", user_id:USER_ID, name:"Indigo denim jacket",  category:"Outerwear",   color:"blue",  style:"casual",   event:"weekend", image_url:"https://images.unsplash.com/photo-1602293589930-45aad59ba3ab?w=520&q=80", created_at:"2026-06-04T09:00:00Z", updated_at:"2026-06-04T09:00:00Z" },
-  { id:"itm_03", user_id:USER_ID, name:"White cotton tee",     category:"Tops",        color:"white", style:"minimal",  event:"everyday",image_url:"https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=520&q=80", created_at:"2026-06-05T14:30:00Z", updated_at:"2026-06-05T14:30:00Z" },
-  { id:"itm_04", user_id:USER_ID, name:"Tan leather boots",    category:"Shoes",       color:"tan",   style:"smart",    event:"dinner",  image_url:"https://images.unsplash.com/photo-1560243563-062bfc001d68?w=520&q=80",  created_at:"2026-06-06T11:00:00Z", updated_at:"2026-06-20T11:00:00Z" },
-  { id:"itm_05", user_id:USER_ID, name:"Black straight jeans", category:"Bottoms",     color:"black", style:"minimal",  event:"everyday",image_url:"https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=520&q=80", created_at:"2026-06-08T16:20:00Z", updated_at:"2026-06-08T16:20:00Z" },
-  { id:"itm_06", user_id:USER_ID, name:"Brown leather satchel",category:"Accessories", color:"brown", style:"smart",    event:"work",    image_url:"https://images.unsplash.com/photo-1521339329070-3cac0d9adf1c?w=520&q=80", created_at:"2026-06-10T10:00:00Z", updated_at:"2026-06-10T10:00:00Z" },
-  { id:"itm_07", user_id:USER_ID, name:"Ecru knit sweater",    category:"Tops",        color:"white", style:"minimal",  event:"weekend", image_url:"https://images.unsplash.com/photo-1445205170230-053b83016050?w=520&q=80", created_at:"2026-06-12T13:00:00Z", updated_at:"2026-06-12T13:00:00Z" },
-  { id:"itm_08", user_id:USER_ID, name:"Ivory silk blouse",    category:"Tops",        color:"white", style:"smart",    event:"dinner",  image_url:"https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=520&q=80", created_at:"2026-06-14T18:00:00Z", updated_at:"2026-06-14T18:00:00Z" },
-  { id:"itm_09", user_id:USER_ID, name:"Sand linen shirt",     category:"Tops",        color:"tan",   style:"casual",   event:"weekend", image_url:"https://images.unsplash.com/photo-1543087903-1ac2ec7aa8c5?w=520&q=80",  created_at:"2026-06-16T09:40:00Z", updated_at:"2026-06-16T09:40:00Z" },
-  { id:"itm_10", user_id:USER_ID, name:"Navy chinos",          category:"Bottoms",     color:"blue",  style:"smart",    event:"work",    image_url:"https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=520&q=80", created_at:"2026-06-18T12:00:00Z", updated_at:"2026-06-18T12:00:00Z" },
-  { id:"itm_11", user_id:USER_ID, name:"Grey suede sneakers",  category:"Shoes",       color:"grey",  style:"casual",   event:"everyday",image_url:"https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=520&q=80", created_at:"2026-06-21T15:00:00Z", updated_at:"2026-06-21T15:00:00Z" },
-  { id:"itm_12", user_id:USER_ID, name:"Rust cashmere scarf",  category:"Accessories", color:"rust",  style:"minimal",  event:"everyday",image_url:"https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=520&q=80", created_at:"2026-06-24T10:30:00Z", updated_at:"2026-06-24T10:30:00Z" },
-];
-
-/* UI-only state */
-const favorites = new Set(["itm_01","itm_04"]);
+let wardrobeItems = [];
+const favorites = new Set();
 const CATEGORIES = ["All","Tops","Bottoms","Shoes","Outerwear","Accessories"];
-const COLOR_HEX = { camel:"#B98A54", blue:"#3E5C77", white:"#F2EFE8", tan:"#C7A176", black:"#22262A", brown:"#6E4E37", grey:"#9AA3A2", rust:"#A85C3F" };
+const COLOR_HEX = {
+  camel:"#B98A54", blue:"#3E5C77", white:"#F2EFE8", tan:"#C7A176", black:"#22262A",
+  brown:"#6E4E37", grey:"#9AA3A2", gray:"#9AA3A2", rust:"#A85C3F",
+  navy:"#2C3E50", pink:"#D4A5A5", beige:"#D8CFC0", gold:"#C9A227", neutral:"#B8BFC0"
+};
 let activeCategory="All", activeColor=null, favOnly=false;
 
 /* styling mode — maps to Fashion Orchestrator strategy param, e.g.
@@ -512,6 +498,15 @@ const MODE_LABEL = { wardrobe:"My wardrobe", hybrid:"Wardrobe + AI", inspiration
 
 /* ---------- Landing → Wardrobe transition ---------- */
 let opened=false;
+
+async function loadWardrobeItems(){
+  const response=await fetch('/api/wardrobe/items');
+  if(!response.ok){
+    throw new Error(`Failed to load wardrobe (${response.status})`);
+  }
+  wardrobeItems=await response.json();
+}
+
 function openWardrobe(){
   if(opened) return; opened=true;
   const landing=document.getElementById('landing');
@@ -522,10 +517,17 @@ function openWardrobe(){
   veil.classList.add('flash');
   const t1=reduced?100:1150, t2=reduced?250:1750;
   setTimeout(()=>landing.classList.add('zooming'),t1);
-  setTimeout(()=>{
+  setTimeout(async ()=>{
     landing.style.display='none';
     app.classList.add('visible');
     requestAnimationFrame(()=>requestAnimationFrame(()=>app.classList.add('entered')));
+    try{
+      await loadWardrobeItems();
+    }catch(error){
+      console.error(error);
+      wardrobeItems=[];
+      document.getElementById('count').textContent='Could not load wardrobe';
+    }
     render();
   },t2);
 }
@@ -639,10 +641,78 @@ const WHY={
 };
 let sessionOutfit={}; /* slot -> item */
 let sessionActive=false;
+let currentOutfitResult=null;
+
+async function requestOutfit(prompt){
+  const response=await fetch('/api/outfits',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({prompt}),
+  });
+  if(!response.ok){
+    let detail=`Failed to generate outfit (${response.status})`;
+    try{
+      const error=await response.json();
+      if(error.detail) detail=typeof error.detail==='string'?error.detail:JSON.stringify(error.detail);
+    }catch(_e){}
+    throw new Error(detail);
+  }
+  return response.json();
+}
+
+function applyOutfitResponse(data){
+  currentOutfitResult=data;
+  sessionOutfit={};
+  const items=data.outfit?.items||[];
+  for(const item of items){
+    if(SLOTS.includes(item.category)){
+      sessionOutfit[item.category]={...item,ai:false};
+    }
+  }
+  sessionActive=items.length>0;
+}
+
+function buildWhyText(data){
+  const parts=[];
+  if(data.outfit?.reason) parts.push(`"${data.outfit.reason}"`);
+  if(data.stylist_notes) parts.push(data.stylist_notes);
+  if(!parts.length&&data.message) parts.push(`"${data.message}"`);
+  return parts.join(' ')||WHY[currentMode];
+}
+
+async function requestInlineEdit(payload){
+  const response=await fetch('/api/outfits/inline-edit',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload),
+  });
+  if(!response.ok){
+    let detail=`Failed to update item (${response.status})`;
+    try{
+      const error=await response.json();
+      if(error.detail) detail=typeof error.detail==='string'?error.detail:JSON.stringify(error.detail);
+    }catch(_e){}
+    throw new Error(detail);
+  }
+  return response.json();
+}
+
+function defaultSwapInstruction(item){
+  return item?.style==='elegant'?'make it more casual':'make it more elegant';
+}
+
+function updateOutfitItemInState(slot,updatedItem,originalItem){
+  sessionOutfit[slot]={...updatedItem,ai:false};
+  if(!currentOutfitResult?.outfit?.items) return;
+  currentOutfitResult.outfit.items=currentOutfitResult.outfit.items.map(item=>{
+    if(originalItem?.id&&item.id===originalItem.id) return {...updatedItem,ai:false};
+    if(item.category===slot&&item.name===originalItem?.name) return {...updatedItem,ai:false};
+    return item;
+  });
+}
 
 function pickFor(slot,excludeId){
   const pool=wardrobeItems.filter(i=>i.category===slot&&i.id!==excludeId);
-  /* Memory Agent: prefer minimal style, favorite colors */
   pool.sort((a,b)=>{
     const s=i=>(i.style==='minimal'?2:0)+(['black','camel','tan','white'].includes(i.color)?1:0);
     return s(b)-s(a);
@@ -677,13 +747,13 @@ function runThinking(text){
   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
   const stepsByMode={
     wardrobe:[
-      ["Reading your wardrobe — 12 pieces","wardrobe agent"],
-      ["Recalling preferences — minimal, no loafers","memory agent"],
+      ["Reading your wardrobe — "+wardrobeItems.length+" pieces","wardrobe agent"],
+      ["Recalling your saved style preferences","memory agent"],
       ["Composing from what you own","stylist agent"],
     ],
     hybrid:[
-      ["Reading your wardrobe — 12 pieces","wardrobe agent"],
-      ["Recalling preferences — minimal, no loafers","memory agent"],
+      ["Reading your wardrobe — "+wardrobeItems.length+" pieces","wardrobe agent"],
+      ["Recalling your saved style preferences","memory agent"],
       ["Scanning current trends for gaps","stylist agent"],
       ["Composing — your closet first","orchestrator"],
     ],
@@ -706,10 +776,34 @@ function runThinking(text){
     setTimeout(()=>el.classList.add('on'),i*stepTime+150);
     setTimeout(()=>el.classList.add('done'),(i+1)*stepTime+100);
   });
-  setTimeout(()=>{buildOutfit(text);revealBoard();},steps.length*stepTime+(reduced?100:500));
+
+  const outfitPromise=requestOutfit(text);
+  const animationPromise=new Promise(resolve=>{
+    setTimeout(resolve,steps.length*stepTime+(reduced?100:500));
+  });
+
+  Promise.all([outfitPromise,animationPromise])
+    .then(async ([data])=>{
+      applyOutfitResponse(data);
+      if(data.wardrobe_update?.added){
+        try{await loadWardrobeItems();}catch(error){console.error(error);}
+        render();
+      }
+      revealBoard(data);
+    })
+    .catch(error=>{
+      console.error(error);
+      sessionOutfit={};
+      sessionActive=false;
+      currentOutfitResult=null;
+      document.getElementById('whyText').textContent=error.message;
+      document.getElementById('boardWrap').classList.add('show');
+      renderBoard();
+    });
 }
 
 function buildOutfit(text){
+  /* Legacy mock builder kept for slot-swap fallback until inline-edit API is wired. */
   sessionOutfit={};
   const wantsCamel=/camel|beige/i.test(text);
   SLOTS.forEach(slot=>{
@@ -717,11 +811,10 @@ function buildOutfit(text){
       sessionOutfit[slot]={...AI_CATALOG.find(c=>c.category===slot),ai:true};
     }else{
       let item=pickFor(slot,null);
-      if(slot==='Outerwear'&&wantsCamel)item=wardrobeItems.find(i=>i.id==='itm_01')||item;
+      if(slot==='Outerwear'&&wantsCamel)item=wardrobeItems.find(i=>/trench|blazer|coat/i.test(i.name))||item;
       sessionOutfit[slot]=item?{...item,ai:false}:null;
     }
   });
-  /* hybrid: one AI suggestion filling the "gap" (accessory-level suggestion on the shoes slot's neighbor) */
   if(currentMode==='hybrid'){
     sessionOutfit['Shoes']={...AI_CATALOG.find(c=>c.category==='Shoes'),ai:true};
   }
@@ -744,35 +837,68 @@ function renderBoard(){
   }).join('');
 }
 
-function revealBoard(){
+function revealBoard(data){
   renderBoard();
-  document.getElementById('whyText').textContent=WHY[currentMode];
+  document.getElementById('whyText').textContent=buildWhyText(data||currentOutfitResult||{});
   document.getElementById('boardWrap').classList.add('show');
 }
 
 /* Inline Edit Agent: replace one slot, everything else stays still */
-function swapSlot(slot){
+async function swapSlot(slot){
   const el=document.querySelector(`.bg-item[data-slot="${slot}"]`);
   const current=sessionOutfit[slot];
-  let next;
-  if(currentMode==='inspiration'){
-    next={...AI_CATALOG.find(c=>c.category===slot),ai:true};
-  }else{
-    next=pickFor(slot,current?current.id:null);
-    if(next)next={...next,ai:false};
-    else next=current; /* nothing else in that category */
+  if(!current) return;
+
+  if(current.ai||currentMode==='inspiration'){
+    let next={...AI_CATALOG.find(c=>c.category===slot),ai:true};
+    sessionOutfit[slot]=next;
+    if(!el){renderBoard();return;}
+    el.classList.add('swapping');
+    setTimeout(()=>{
+      renderBoard();
+      const fresh=document.querySelector(`.bg-item[data-slot="${slot}"]`);
+      if(fresh){fresh.style.animation='none';fresh.classList.add('swapping');
+        requestAnimationFrame(()=>requestAnimationFrame(()=>fresh.classList.remove('swapping')));}
+      document.querySelectorAll('.bg-item').forEach(b=>{if(b!==fresh)b.style.animation='none';});
+    },220);
+    return;
   }
-  sessionOutfit[slot]=next;
-  if(!el){renderBoard();return;}
-  el.classList.add('swapping');
-  setTimeout(()=>{
+
+  if(!currentOutfitResult?.outfit?.items?.length){
+    console.warn('No active outfit available for inline edit.');
+    return;
+  }
+
+  const instruction=defaultSwapInstruction(current);
+  if(el) el.classList.add('swapping');
+
+  try{
+    const data=await requestInlineEdit({
+      current_outfit:currentOutfitResult.outfit,
+      target_item:current,
+      instruction,
+    });
+
+    if(data.updated_item){
+      updateOutfitItemInState(slot,data.updated_item,current);
+    }
+    if(data.message){
+      document.getElementById('whyText').textContent=data.message;
+    }
+
     renderBoard();
     const fresh=document.querySelector(`.bg-item[data-slot="${slot}"]`);
-    if(fresh){fresh.style.animation='none';fresh.classList.add('swapping');
-      requestAnimationFrame(()=>requestAnimationFrame(()=>fresh.classList.remove('swapping')));}
-    /* keep the untouched garments perfectly still */
+    if(fresh){
+      fresh.style.animation='none';
+      fresh.classList.add('swapping');
+      requestAnimationFrame(()=>requestAnimationFrame(()=>fresh.classList.remove('swapping')));
+    }
     document.querySelectorAll('.bg-item').forEach(b=>{if(b!==fresh)b.style.animation='none';});
-  },220);
+  }catch(error){
+    console.error(error);
+    if(el) el.classList.remove('swapping');
+    document.getElementById('whyText').textContent=error.message;
+  }
 }
 
 function regenerate(){

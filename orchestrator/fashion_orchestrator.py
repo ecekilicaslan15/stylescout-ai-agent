@@ -10,7 +10,7 @@ from context.context_builder import ContextBuilder
 from memory.memory_manager import load_memory
 from models.agent_response import AgentResponse
 from models.plan import plan_to_dict
-from wardrobe.json_wardrobe_repository import JsonWardrobeRepository
+from wardrobe.repository_factory import create_wardrobe_repository
 from wardrobe.wardrobe_repository import WardrobeRepository
 
 # Ordered agent sequence per intent. Multiple agents run left-to-right.
@@ -29,7 +29,7 @@ class FashionOrchestrator:
     """Routes user requests to the correct agent(s) based on plan intent."""
 
     def __init__(self, wardrobe_repository: WardrobeRepository | None = None) -> None:
-        self._wardrobe_repository = wardrobe_repository or JsonWardrobeRepository()
+        self._wardrobe_repository = wardrobe_repository or create_wardrobe_repository()
         wardrobe_agent = WardrobeAgent(wardrobe_repository=self._wardrobe_repository)
         agents = [
             MemoryAgent(),

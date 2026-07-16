@@ -4,20 +4,22 @@ import json
 from pathlib import Path
 
 from wardrobe.constants import CATEGORIES, DEFAULT_WARDROBE
+from wardrobe.normalization import (
+    clean_item_name,
+    normalize_stored_color,
+    normalize_style,
+    validate_category,
+)
 from wardrobe.wardrobe_repository import WardrobeRepository
 
-DEFAULT_PATH = Path("wardrobe/wardrobe.json")
-
-
-def _normalize_color(color: str) -> str:
-    return "grey" if color == "gray" else color
+DEFAULT_JSON_PATH = Path(__file__).resolve().parent / "wardrobe.json"
 
 
 class JsonWardrobeRepository(WardrobeRepository):
     """Load and save wardrobe data from a JSON file."""
 
     def __init__(self, path: Path | str | None = None) -> None:
-        self._path = Path(path) if path is not None else DEFAULT_PATH
+        self._path = Path(path) if path is not None else DEFAULT_JSON_PATH
 
     def get_by_category(self) -> dict[str, list[dict]]:
         if not self._path.exists():
@@ -39,26 +41,25 @@ class JsonWardrobeRepository(WardrobeRepository):
         return list(self.get_by_category().get(category, []))
 
     def find_by_color(self, color: str) -> list[dict]:
-        normalized = _normalize_color(color.strip().lower())
+        normalized = normalize_stored_color(color)
         matches: list[dict] = []
 
         for item in self.get_all():
-            item_color = _normalize_color(item.get("color", "").strip().lower())
+            item_color = normalize_stored_color(item.get("color", ""))
             if item_color == normalized:
                 matches.append(item)
 
         return matches
 
     def add_item(self, category: str, item: dict) -> bool:
-        if category not in CATEGORIES:
-            raise ValueError(f"Unknown wardrobe category: {category}")
+        validate_category(category)
 
         wardrobe = self.get_by_category()
         cleaned_item = {
-            "name": item.get("name", "").strip(),
+            "name": clean_item_name(item.get("name", "")),
             "category": category,
-            "color": _normalize_color(item.get("color", "").strip().lower()),
-            "style": item.get("style", "casual").strip().lower() or "casual",
+            "color": normalize_stored_color(item.get("color", "")),
+            "style": normalize_style(item.get("style", "casual")),
         }
 
         if not cleaned_item["name"]:
@@ -80,12 +81,12 @@ class JsonWardrobeRepository(WardrobeRepository):
 
     @staticmethod
     def _item_exists(wardrobe: dict, category: str, item: dict) -> bool:
-        item_name = item.get("name", "").strip().lower()
+        item_name = clean_item_name(item.get("name", "")).lower()
         if not item_name:
             return False
 
         for existing in wardrobe.get(category, []):
-            if existing.get("name", "").strip().lower() == item_name:
+            if clean_item_name(existing.get("name", "")).lower() == item_name:
                 return True
 
         return False
