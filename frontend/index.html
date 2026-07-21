@@ -79,7 +79,7 @@ input{font-family:var(--font-body);}
 #landing.opening .hang{opacity:1;filter:saturate(1) brightness(1);}
 .hang .hook{width:2px;height:16px;background:#8FAAA9;border-radius:1px;}
 .hang .hanger{width:44px;height:8px;border:2px solid #8FAAA9;border-bottom:none;border-radius:8px 8px 0 0;}
-.hang img{width:92px;height:150px;object-fit:cover;border-radius:8px;margin-top:-2px;box-shadow:0 14px 26px rgba(0,0,0,0.5);}
+.hang .hang-garment{width:92px;height:150px;border-radius:8px;margin-top:-2px;box-shadow:0 14px 26px rgba(0,0,0,0.5);}
 .h1{left:6%;animation-delay:0s;}
 .h2{left:29%;animation-delay:.8s;top:13.4%;}
 .h3{left:52%;animation-delay:1.6s;}
@@ -312,8 +312,8 @@ input{font-family:var(--font-body);}
   <nav class="landing-nav">
     <div class="brand"><span class="brand-dot"></span>StyleScout</div>
     <div class="nav-secondary">
-      <span>How it works</span>
-      <span>About</span>
+      <!-- TODO: Phase 3 — How it works page -->
+      <!-- TODO: Phase 3 — About page -->
       <button class="btn btn-ghost" style="padding:11px 20px;font-size:14px;" onclick="openWardrobe()">Open my wardrobe</button>
     </div>
   </nav>
@@ -324,7 +324,7 @@ input{font-family:var(--font-body);}
       <p>Upload what you own. StyleScout learns your closet and creates outfits from your actual clothes.</p>
       <div class="hero-ctas">
         <button class="btn btn-primary" onclick="openWardrobe()">Open my wardrobe</button>
-        <button class="btn btn-ghost">See how it works</button>
+        <!-- TODO: Phase 3 — See how it works -->
       </div>
       <div class="hero-hint"><span class="pulse"></span>Or click the wardrobe itself</div>
     </div>
@@ -333,10 +333,10 @@ input{font-family:var(--font-body);}
         <div class="cabinet"></div>
         <div class="interior">
           <div class="interior-rail"></div>
-          <div class="hang h1"><div class="hook"></div><div class="hanger"></div><img src="https://images.unsplash.com/photo-1551028719-00167b16eac5?w=200&q=70" alt=""></div>
-          <div class="hang h2"><div class="hook"></div><div class="hanger"></div><img src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&q=70" alt=""></div>
-          <div class="hang h3"><div class="hook"></div><div class="hanger"></div><img src="https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=200&q=70" alt=""></div>
-          <div class="hang h4"><div class="hook"></div><div class="hanger"></div><img src="https://images.unsplash.com/photo-1543087903-1ac2ec7aa8c5?w=200&q=70" alt=""></div>
+          <div class="hang h1"><div class="hook"></div><div class="hanger"></div><div class="hang-garment" style="background:#7FA3A0"></div></div>
+          <div class="hang h2"><div class="hook"></div><div class="hanger"></div><div class="hang-garment" style="background:#B8C8C4"></div></div>
+          <div class="hang h3"><div class="hook"></div><div class="hanger"></div><div class="hang-garment" style="background:#C9BFAE"></div></div>
+          <div class="hang h4"><div class="hook"></div><div class="hanger"></div><div class="hang-garment" style="background:#9AA3A2"></div></div>
           <div class="interior-shelf"></div>
           <div class="folded f1"></div><div class="folded f2"></div><div class="folded f3"></div>
         </div>
@@ -355,11 +355,11 @@ input{font-family:var(--font-body);}
 <div id="app">
   <nav class="rail" aria-label="Main navigation">
     <div class="mark">S<span style="color:var(--turquoise);">.</span></div>
-    <button class="rail-item" title="Dashboard" aria-label="Dashboard"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9h13v-9"/></svg></button>
-    <button class="rail-item active" title="Wardrobe" aria-label="Wardrobe"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M12 3v18M9 11v2M15 11v2"/></svg></button>
+    <!-- TODO: Phase 2 — Dashboard -->
+    <!-- TODO: Phase 2 — Wardrobe nav (page is already active) -->
     <button class="rail-item" title="Style me" aria-label="Style me" onclick="focusPrompt()"><svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4L12 3z"/></svg></button>
-    <button class="rail-item" title="Profile" aria-label="Profile"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c1.2-3.4 3.9-5 7-5s5.8 1.6 7 5"/></svg></button>
-    <button class="rail-item" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 4v2.2M12 17.8V20M4 12h2.2M17.8 12H20M6.3 6.3l1.6 1.6M16.1 16.1l1.6 1.6M17.7 6.3l-1.6 1.6M7.9 16.1l-1.6 1.6"/></svg></button>
+    <!-- TODO: Phase 3 — Profile -->
+    <!-- TODO: Phase 3 — Settings -->
   </nav>
 
   <main class="main">
@@ -368,7 +368,7 @@ input{font-family:var(--font-body);}
         <span style="font-family:var(--font-display);font-weight:500;font-size:30px;letter-spacing:-0.01em;">My wardrobe</span>
         <span class="item-count" id="count">Loading…</span>
       </div>
-      <button class="btn-sm btn-add">+ Add item</button>
+      <!-- TODO: Phase 2 — Add item (POST /api/wardrobe/items) -->
     </header>
 
     <!-- AI CONSOLE -->
@@ -391,29 +391,16 @@ input{font-family:var(--font-body);}
       </div>
 
       <div class="modes" role="radiogroup" aria-label="Styling mode">
-        <button class="mode active" data-mode="wardrobe" onclick="setMode(this)" role="radio" aria-checked="true">
+        <div class="mode active" role="radio" aria-checked="true">
           <div class="m-title"><span class="m-dot"></span>My wardrobe</div>
           <div class="m-desc">Only garments you already own.</div>
-        </button>
-        <button class="mode" data-mode="hybrid" onclick="setMode(this)" role="radio" aria-checked="false">
-          <div class="m-title"><span class="m-dot"></span>Wardrobe + AI</div>
-          <div class="m-desc">Your closet first — AI may suggest missing pieces.</div>
-        </button>
-        <button class="mode" data-mode="inspiration" onclick="setMode(this)" role="radio" aria-checked="false">
-          <div class="m-title"><span class="m-dot"></span>AI inspiration</div>
-          <div class="m-desc">Fresh outfit ideas, unconstrained by your closet.</div>
-        </button>
+        </div>
+        <!-- TODO: Phase 1 — Wardrobe + AI mode (backend mode param) -->
+        <!-- TODO: Phase 1 — AI inspiration mode (backend mode param) -->
       </div>
     </section>
 
-    <!-- MEMORY -->
-    <div class="memory" aria-label="Learned preferences">
-      <span class="memory-label"><span class="m-pulse"></span>StyleScout remembers</span>
-      <span class="mem-chip">Prefers <b>minimal</b> outfits <span class="x">✕</span></span>
-      <span class="mem-chip">Dislikes <b>loafers</b> <span class="x">✕</span></span>
-      <span class="mem-chip">Favorite colors <b>black · beige</b> <span class="x">✕</span></span>
-      <span class="mem-edit">Edit memory</span>
-    </div>
+    <!-- TODO: Phase 2 — Memory panel (GET /api/memory) -->
 
     <!-- FILTERS -->
     <div class="filterbar">
@@ -428,7 +415,7 @@ input{font-family:var(--font-body);}
       <div class="empty-illust"><span class="eh e1"></span><span class="eh e2"></span><span class="eh e3"></span></div>
       <h3>Your closet is waiting</h3>
       <p>No pieces match here yet. Add your first item and StyleScout starts learning your wardrobe.</p>
-      <button class="btn btn-primary" style="padding:13px 26px;">Add your first piece</button>
+      <!-- TODO: Phase 2 — Add your first piece (POST /api/wardrobe/items) -->
     </div>
   </main>
 </div>
@@ -442,7 +429,7 @@ input{font-family:var(--font-body);}
   <div class="tagrow" id="dTags"></div>
   <div class="detail-actions">
     <button class="btn-sm btn-style" onclick="styleFromDetail()"><span class="spark">✦</span>Style this piece</button>
-    <button class="btn-sm btn-add">Edit details</button>
+    <!-- TODO: Phase 2 — Edit details -->
   </div>
   <div class="detail-meta" id="dMeta"></div>
 </aside>
@@ -469,8 +456,8 @@ input{font-family:var(--font-body);}
       </div>
       <div class="session-actions">
         <button class="btn-sm btn-add" onclick="regenerate()">↻ Regenerate</button>
-        <button class="btn-sm btn-add">Save outfit</button>
-        <button class="btn-sm btn-style"><span class="spark">✦</span>Wear today</button>
+        <!-- TODO: Phase 2 — Save outfit -->
+        <!-- TODO: Phase 2 — Wear today -->
       </div>
       <div class="session-hint">Hover a piece and tap <b>⟲</b> to replace just that item — the rest of the outfit stays.</div>
     </div>
@@ -491,10 +478,9 @@ const COLOR_HEX = {
 };
 let activeCategory="All", activeColor=null, favOnly=false;
 
-/* styling mode — maps to Fashion Orchestrator strategy param, e.g.
-   POST /outfits { user_id, prompt, mode: "wardrobe" | "hybrid" | "inspiration" } */
-let currentMode = "wardrobe";
-const MODE_LABEL = { wardrobe:"My wardrobe", hybrid:"Wardrobe + AI", inspiration:"AI inspiration" };
+/* styling mode — wardrobe only until backend mode param ships (Phase 1) */
+const currentMode = "wardrobe";
+const MODE_LABEL = { wardrobe: "My wardrobe" };
 
 /* ---------- Landing → Wardrobe transition ---------- */
 let opened=false;
@@ -605,20 +591,9 @@ function focusPrompt(){
   document.getElementById('prompt').focus();
   document.querySelector('.console').scrollIntoView({behavior:'smooth',block:'center'});
 }
-function setMode(el){
-  currentMode=el.dataset.mode;
-  document.querySelectorAll('.mode').forEach(m=>{
-    const on=m===el;
-    m.classList.toggle('active',on);
-    m.setAttribute('aria-checked',on);
-  });
-}
 
 /* ============================================================
    AI STYLING SESSION
-   In production this maps to the Fashion Orchestrator:
-   prompt + mode → Wardrobe Agent → Memory Agent → Stylist Agent
-   Single-slot swaps map to the Inline Edit Agent.
    ============================================================ */
 const SLOTS=["Outerwear","Tops","Bottoms","Shoes"];
 const SLOT_POS=[
@@ -627,18 +602,6 @@ const SLOT_POS=[
   {w:'33%',h:'42%',bottom:'7%',left:'26%',rot:-2,z:3},
   {w:'24%',h:'26%',bottom:'9%',right:'12%',rot:6,z:4},
 ];
-/* AI-inspiration catalogue (not in the user's wardrobe) */
-const AI_CATALOG=[
-  {name:"Sage overshirt",   category:"Outerwear", image_url:"https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=520&q=80"},
-  {name:"Charcoal knit polo",category:"Tops",     image_url:"https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=520&q=80"},
-  {name:"Pleated trousers", category:"Bottoms",   image_url:"https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=520&q=80"},
-  {name:"Minimal leather sneakers",category:"Shoes",image_url:"https://images.unsplash.com/photo-1549298916-b41d501d3772?w=520&q=80"},
-];
-const WHY={
-  wardrobe:'"The camel coat picks up the trouser\'s undertone — everything here is already hanging in your closet."',
-  hybrid:'"Built on your camel coat and black jeans — one suggested piece would quietly complete the look."',
-  inspiration:'"A direction to grow toward: relaxed tailoring in the muted palette you already gravitate to."'
-};
 let sessionOutfit={}; /* slot -> item */
 let sessionActive=false;
 let currentOutfitResult=null;
@@ -677,7 +640,7 @@ function buildWhyText(data){
   if(data.outfit?.reason) parts.push(`"${data.outfit.reason}"`);
   if(data.stylist_notes) parts.push(data.stylist_notes);
   if(!parts.length&&data.message) parts.push(`"${data.message}"`);
-  return parts.join(' ')||WHY[currentMode];
+  return parts.join(' ');
 }
 
 async function requestInlineEdit(payload){
@@ -711,15 +674,6 @@ function updateOutfitItemInState(slot,updatedItem,originalItem){
   });
 }
 
-function pickFor(slot,excludeId){
-  const pool=wardrobeItems.filter(i=>i.category===slot&&i.id!==excludeId);
-  pool.sort((a,b)=>{
-    const s=i=>(i.style==='minimal'?2:0)+(['black','camel','tan','white'].includes(i.color)?1:0);
-    return s(b)-s(a);
-  });
-  return pool[0]||null;
-}
-
 function startSession(){
   const promptEl=document.getElementById('prompt');
   const text=promptEl.value.trim()||"What should I wear today?";
@@ -745,25 +699,11 @@ function openSessionShell(text,skipThinking){
 
 function runThinking(text){
   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const stepsByMode={
-    wardrobe:[
-      ["Reading your wardrobe — "+wardrobeItems.length+" pieces","wardrobe agent"],
-      ["Recalling your saved style preferences","memory agent"],
-      ["Composing from what you own","stylist agent"],
-    ],
-    hybrid:[
-      ["Reading your wardrobe — "+wardrobeItems.length+" pieces","wardrobe agent"],
-      ["Recalling your saved style preferences","memory agent"],
-      ["Scanning current trends for gaps","stylist agent"],
-      ["Composing — your closet first","orchestrator"],
-    ],
-    inspiration:[
-      ["Recalling your taste profile","memory agent"],
-      ["Exploring ideas beyond your closet","stylist agent"],
-      ["Composing a fresh direction","orchestrator"],
-    ],
-  };
-  const steps=stepsByMode[currentMode];
+  const steps=[
+    ["Reading your wardrobe — "+wardrobeItems.length+" pieces","wardrobe agent"],
+    ["Recalling your saved style preferences","memory agent"],
+    ["Composing from what you own","stylist agent"],
+  ];
   const wrap=document.getElementById('steps');
   wrap.innerHTML=steps.map(s=>`
     <div class="step">
@@ -802,25 +742,6 @@ function runThinking(text){
     });
 }
 
-function buildOutfit(text){
-  /* Legacy mock builder kept for slot-swap fallback until inline-edit API is wired. */
-  sessionOutfit={};
-  const wantsCamel=/camel|beige/i.test(text);
-  SLOTS.forEach(slot=>{
-    if(currentMode==='inspiration'){
-      sessionOutfit[slot]={...AI_CATALOG.find(c=>c.category===slot),ai:true};
-    }else{
-      let item=pickFor(slot,null);
-      if(slot==='Outerwear'&&wantsCamel)item=wardrobeItems.find(i=>/trench|blazer|coat/i.test(i.name))||item;
-      sessionOutfit[slot]=item?{...item,ai:false}:null;
-    }
-  });
-  if(currentMode==='hybrid'){
-    sessionOutfit['Shoes']={...AI_CATALOG.find(c=>c.category==='Shoes'),ai:true};
-  }
-  sessionActive=true;
-}
-
 function renderBoard(){
   const board=document.getElementById('board');
   board.innerHTML=SLOTS.map((slot,i)=>{
@@ -848,21 +769,6 @@ async function swapSlot(slot){
   const el=document.querySelector(`.bg-item[data-slot="${slot}"]`);
   const current=sessionOutfit[slot];
   if(!current) return;
-
-  if(current.ai||currentMode==='inspiration'){
-    let next={...AI_CATALOG.find(c=>c.category===slot),ai:true};
-    sessionOutfit[slot]=next;
-    if(!el){renderBoard();return;}
-    el.classList.add('swapping');
-    setTimeout(()=>{
-      renderBoard();
-      const fresh=document.querySelector(`.bg-item[data-slot="${slot}"]`);
-      if(fresh){fresh.style.animation='none';fresh.classList.add('swapping');
-        requestAnimationFrame(()=>requestAnimationFrame(()=>fresh.classList.remove('swapping')));}
-      document.querySelectorAll('.bg-item').forEach(b=>{if(b!==fresh)b.style.animation='none';});
-    },220);
-    return;
-  }
 
   if(!currentOutfitResult?.outfit?.items?.length){
     console.warn('No active outfit available for inline edit.');

@@ -2,12 +2,21 @@
 
 from __future__ import annotations
 
+import os
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
 
 DEFAULT_DB_PATH = Path(__file__).resolve().parent / "wardrobe.db"
+
+
+def get_db_path() -> Path:
+    """Return the configured SQLite path, defaulting to the local dev location."""
+    configured = os.getenv("DB_PATH")
+    if configured:
+        return Path(configured)
+    return DEFAULT_DB_PATH
 
 WARDROBE_ITEMS_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS wardrobe_items (

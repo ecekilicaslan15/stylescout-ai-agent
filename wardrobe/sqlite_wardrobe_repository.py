@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from wardrobe.constants import CATEGORIES
-from wardrobe.database import DEFAULT_DB_PATH, init_wardrobe_db, wardrobe_connection
+from wardrobe.database import get_db_path, init_wardrobe_db, wardrobe_connection
 from wardrobe.normalization import (
     clean_item_name,
     normalize_stored_color,
@@ -42,7 +42,7 @@ class SqliteWardrobeRepository(WardrobeRepository):
         db_path: Path | str | None = None,
         user_id: str = DEFAULT_USER_ID,
     ) -> None:
-        self._db_path = Path(db_path) if db_path is not None else DEFAULT_DB_PATH
+        self._db_path = Path(db_path) if db_path is not None else get_db_path()
         self._user_id = user_id
         self._initialize_database()
 

@@ -22,3 +22,7 @@ __pycache__/
 *.db
 *.sqlite
 *.sqlite3
+.venv*
+venv/
+.venv*
+venv/

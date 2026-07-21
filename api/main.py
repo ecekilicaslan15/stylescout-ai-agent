@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import hashlib
+import json
+import os
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
@@ -15,10 +18,15 @@ from pydantic import BaseModel, Field
 from memory.memory_store import update_memory_from_input
 from models.plan import Plan, plan_to_dict
 from orchestrator.fashion_orchestrator import run_fashion_agent, run_inline_edit
+from wardrobe.constants import CATEGORIES
+from wardrobe.database import get_db_path, init_wardrobe_db, wardrobe_connection
+from wardrobe.repository_factory import WARDROBE_BACKEND_ENV
 from wardrobe.wardrobe_manager import update_wardrobe_from_input
 from wardrobe.wardrobe_service import WardrobeService
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+SAMPLE_WARDROBE_PATH = Path(__file__).resolve().parent.parent / "wardrobe" / "wardrobe.json"
+DEFAULT_USER_ID_FOR_SEED = "default"
 
 CATEGORY_LABELS = {
     "tops": "Tops",
@@ -72,6 +80,49 @@ class InlineEditRequest(BaseModel):
 @lru_cache
 def get_wardrobe_service() -> WardrobeService:
     return WardrobeService()
+
+
+def seed_wardrobe_if_empty() -> None:
+    """Load sample wardrobe into SQLite when the table is empty (idempotent)."""
+    backend = (os.getenv(WARDROBE_BACKEND_ENV) or "json").strip().lower()
+    if backend != "sqlite":
+        return
+
+    db_path = get_db_path()
+    with wardrobe_connection(db_path) as connection:
+        init_wardrobe_db(connection)
+        count = connection.execute("SELECT COUNT(*) FROM wardrobe_items").fetchone()[0]
+        if count > 0:
+            return
+
+        with SAMPLE_WARDROBE_PATH.open(encoding="utf-8") as file:
+            sample_data = json.load(file)
+
+        for category in CATEGORIES:
+            for item in sample_data.get(category, []):
+                connection.execute(
+                    """
+                    INSERT INTO wardrobe_items (
+                        user_id, name, category, color, style, event, image_url
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        DEFAULT_USER_ID_FOR_SEED,
+                        item.get("name", ""),
+                        category,
+                        item.get("color", "neutral"),
+                        item.get("style", "casual"),
+                        item.get("event"),
+                        item.get("image_url"),
+                    ),
+                )
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    seed_wardrobe_if_empty()
+    yield
 
 
 def serialize_wardrobe_item(item: dict) -> dict:
@@ -233,7 +284,7 @@ def serialize_fashion_agent_result(result: dict, wardrobe_update: dict | None) -
     }
 
 
-app = FastAPI(title="StyleScout API", version="0.1.0")
+app = FastAPI(title="StyleScout API", version="0.1.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -242,9 +293,14 @@ app.add_middleware(
 )
 
 
-@app.get("/api/health")
+@app.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "ok"}
+    return {"status": "ok", "version": app.version}
+
+
+@app.get("/api/health")
+def api_health() -> dict[str, str]:
+    return {"status": "ok", "version": app.version}
 
 
 @app.get("/api/wardrobe/items")
