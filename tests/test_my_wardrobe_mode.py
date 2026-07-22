@@ -146,27 +146,3 @@ class TestMyWardrobeMode:
 
         assert outfit["items"] == []
         assert "wardrobe" in outfit["reason"].lower()
-
-
-class TestAiInspirationBaseline:
-    def test_ai_inspiration_still_uses_default_fallback(
-        self,
-        stylist_agent: StylistAgent,
-        casual_plan: Plan,
-        empty_memory: dict,
-    ):
-        context = AgentContext(
-            user_input="casual outfit",
-            mode=StylingMode.AI_INSPIRATION,
-            plan=casual_plan,
-            memory=empty_memory,
-            wardrobe=[CONTEXT_TOP],
-        )
-
-        response = stylist_agent.run("casual outfit", {"intent": "outfit_request"}, context)
-        items = response.data["outfit"]["items"]
-        item_names = {item["name"] for item in items}
-
-        assert CONTEXT_TOP["name"] in item_names
-        assert item_names & DEFAULT_ITEM_NAMES
-        assert sum(1 for item in items if item["source"] == "suggested") >= 2

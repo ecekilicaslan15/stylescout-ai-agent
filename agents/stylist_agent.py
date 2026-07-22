@@ -54,7 +54,7 @@ OUTFIT_TO_WARDROBE_KEY = {
     "accessory": "accessories",
 }
 
-# DEFAULT_ITEMS catalogue names — used by tests and unfinished modes only.
+# DEFAULT_ITEMS catalogue names — used by inspiration/suggested fallbacks.
 DEFAULT_ITEM_NAMES = frozenset(item["name"] for item in DEFAULT_ITEMS)
 
 
@@ -74,6 +74,13 @@ def _build_wardrobe_identity_set(wardrobe: dict) -> set[tuple]:
         for item in category_items:
             keys.add(wardrobe_item_key(item))
     return keys
+
+
+def _resolve_inspiration_ownership(item: dict, wardrobe: dict) -> dict:
+    """Annotate a catalogue item as owned when it matches the wardrobe snapshot."""
+    if wardrobe_item_key(item) in _build_wardrobe_identity_set(wardrobe):
+        return _with_provenance(item, source="wardrobe", owned=True)
+    return _with_provenance(item, source="suggested", owned=False)
 
 
 def _with_provenance(item: dict, *, source: str, owned: bool) -> dict:
@@ -112,10 +119,24 @@ def _build_outfit_reason(
                 "No wardrobe or suggested items matched this request. "
                 "Try adjusting your prompt or adding pieces to your wardrobe."
             )
+        if mode == StylingMode.AI_INSPIRATION:
+            return (
+                "No inspiration items matched this request. "
+                "Try adjusting your prompt or style preferences."
+            )
         return (
             "No matching items were found for this request. "
             "Try adjusting your request or adding more clothes to your wardrobe."
         )
+
+    if mode == StylingMode.AI_INSPIRATION:
+        if wardrobe_count == 0:
+            return "Generated as an inspiration outfit from your style preferences."
+        if suggested_count == 0:
+            return (
+                "Generated as inspiration — every piece matches something you already own."
+            )
+        return "Generated as inspiration — some pieces match items you already own."
 
     if suggested_count == 0:
         return (
@@ -129,16 +150,9 @@ def _build_outfit_reason(
             "to personalize future outfits."
         )
 
-    if mode == StylingMode.WARDROBE_PLUS_AI:
-        return (
-            "This outfit combines pieces from your wardrobe with suggested items "
-            "for missing categories."
-        )
-
     return (
-        "This outfit combines your saved wardrobe pieces with suggested items "
-        "for categories you have not added yet, using event, style, saved memory, "
-        "and color preferences."
+        "This outfit combines pieces from your wardrobe with suggested items "
+        "for missing categories."
     )
 
 
@@ -186,23 +200,6 @@ def _score_item(
         score += 2
 
     return score
-
-
-def _get_category_items(
-    wardrobe: dict,
-    outfit_category: str,
-    *,
-    allow_defaults: bool,
-) -> tuple[list[dict], bool]:
-    wardrobe_items = _wardrobe_pool(wardrobe, outfit_category)
-
-    if wardrobe_items:
-        return wardrobe_items, False
-
-    if not allow_defaults:
-        return [], False
-
-    return _default_pool(outfit_category), True
 
 
 def _pick_wardrobe_item(
@@ -337,42 +334,41 @@ def generate_outfit(
                     _with_provenance(suggested_item, source="suggested", owned=False)
                 )
                 suggested_count += 1
-    else:
-        allow_defaults = mode != StylingMode.MY_WARDROBE
-
+    elif mode == StylingMode.AI_INSPIRATION:
         for category in OUTFIT_CATEGORIES:
-            items_pool, use_default_rules = _get_category_items(
+            inspiration_item = _pick_suggested_item(
+                category,
+                plan,
+                favorite_colors,
+                preferred_styles,
+                disliked_items,
+            )
+            if not inspiration_item:
+                continue
+
+            annotated = _resolve_inspiration_ownership(inspiration_item, wardrobe)
+            selected_items.append(annotated)
+            if annotated["owned"]:
+                wardrobe_count += 1
+            else:
+                suggested_count += 1
+    else:
+        for category in OUTFIT_CATEGORIES:
+            wardrobe_item = _pick_wardrobe_item(
                 wardrobe,
                 category,
-                allow_defaults=allow_defaults,
+                plan,
+                favorite_colors,
+                preferred_styles,
+                disliked_items,
             )
-
-            if not items_pool:
+            if not wardrobe_item:
                 continue
 
-            best_item = _select_best_item(
-                items=items_pool,
-                outfit_category=category,
-                plan=plan,
-                favorite_colors=favorite_colors,
-                preferred_styles=preferred_styles,
-                disliked_items=disliked_items,
-                use_default_rules=use_default_rules,
+            selected_items.append(
+                _with_provenance(wardrobe_item, source="wardrobe", owned=True)
             )
-
-            if not best_item:
-                continue
-
-            if use_default_rules:
-                selected_items.append(
-                    _with_provenance(best_item, source="suggested", owned=False)
-                )
-                suggested_count += 1
-            else:
-                selected_items.append(
-                    _with_provenance(best_item, source="wardrobe", owned=True)
-                )
-                wardrobe_count += 1
+            wardrobe_count += 1
 
     reason = _build_outfit_reason(mode, wardrobe_count, suggested_count)
 
