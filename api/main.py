@@ -247,6 +247,10 @@ def serialize_outfit_item(item: dict, wardrobe_by_category: dict[str, list[dict]
 
     serialized = serialize_wardrobe_item(payload)
     serialized["source_category"] = item.get("category", category_key)
+    if "source" in item:
+        serialized["source"] = item["source"]
+    if "owned" in item:
+        serialized["owned"] = item["owned"]
     return serialized
 
 

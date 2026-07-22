@@ -33,6 +33,7 @@ DEFAULT_ITEMS = [
 ]
 
 OUTFIT_CATEGORIES = ["top", "bottom", "shoes", "outerwear", "accessory"]
+MAX_HYBRID_SUGGESTED_ITEMS = 2
 
 CATEGORY_NORMALIZATION = {
     "tops": "top",
@@ -73,6 +74,72 @@ def _build_wardrobe_identity_set(wardrobe: dict) -> set[tuple]:
         for item in category_items:
             keys.add(wardrobe_item_key(item))
     return keys
+
+
+def _with_provenance(item: dict, *, source: str, owned: bool) -> dict:
+    annotated = dict(item)
+    annotated["source"] = source
+    annotated["owned"] = owned
+    return annotated
+
+
+def _wardrobe_pool(wardrobe: dict, outfit_category: str) -> list[dict]:
+    wardrobe_key = OUTFIT_TO_WARDROBE_KEY[outfit_category]
+    return list(wardrobe.get(wardrobe_key, []))
+
+
+def _default_pool(outfit_category: str) -> list[dict]:
+    return [
+        item
+        for item in DEFAULT_ITEMS
+        if _normalize_category(item.get("category")) == outfit_category
+    ]
+
+
+def _build_outfit_reason(
+    mode: StylingMode,
+    wardrobe_count: int,
+    suggested_count: int,
+) -> str:
+    if wardrobe_count == 0 and suggested_count == 0:
+        if mode == StylingMode.MY_WARDROBE:
+            return (
+                "No items in your wardrobe matched this request. "
+                "Add pieces to your wardrobe or try a different prompt."
+            )
+        if mode == StylingMode.WARDROBE_PLUS_AI:
+            return (
+                "No wardrobe or suggested items matched this request. "
+                "Try adjusting your prompt or adding pieces to your wardrobe."
+            )
+        return (
+            "No matching items were found for this request. "
+            "Try adjusting your request or adding more clothes to your wardrobe."
+        )
+
+    if suggested_count == 0:
+        return (
+            "This outfit was built from your saved wardrobe by picking the best item "
+            "from each category based on event, style, saved memory, and color preferences."
+        )
+
+    if wardrobe_count == 0:
+        return (
+            "Suggested items to complete your look — add more to your wardrobe "
+            "to personalize future outfits."
+        )
+
+    if mode == StylingMode.WARDROBE_PLUS_AI:
+        return (
+            "This outfit combines pieces from your wardrobe with suggested items "
+            "for missing categories."
+        )
+
+    return (
+        "This outfit combines your saved wardrobe pieces with suggested items "
+        "for categories you have not added yet, using event, style, saved memory, "
+        "and color preferences."
+    )
 
 
 def _normalize_category(category: str | None) -> str | None:
@@ -127,8 +194,7 @@ def _get_category_items(
     *,
     allow_defaults: bool,
 ) -> tuple[list[dict], bool]:
-    wardrobe_key = OUTFIT_TO_WARDROBE_KEY[outfit_category]
-    wardrobe_items = list(wardrobe.get(wardrobe_key, []))
+    wardrobe_items = _wardrobe_pool(wardrobe, outfit_category)
 
     if wardrobe_items:
         return wardrobe_items, False
@@ -136,13 +202,52 @@ def _get_category_items(
     if not allow_defaults:
         return [], False
 
-    default_items = [
-        item
-        for item in DEFAULT_ITEMS
-        if _normalize_category(item.get("category")) == outfit_category
-    ]
+    return _default_pool(outfit_category), True
 
-    return default_items, True
+
+def _pick_wardrobe_item(
+    wardrobe: dict,
+    outfit_category: str,
+    plan,
+    favorite_colors: list[str],
+    preferred_styles: list[str],
+    disliked_items: list[str],
+) -> dict | None:
+    items_pool = _wardrobe_pool(wardrobe, outfit_category)
+    if not items_pool:
+        return None
+
+    return _select_best_item(
+        items=items_pool,
+        outfit_category=outfit_category,
+        plan=plan,
+        favorite_colors=favorite_colors,
+        preferred_styles=preferred_styles,
+        disliked_items=disliked_items,
+        use_default_rules=False,
+    )
+
+
+def _pick_suggested_item(
+    outfit_category: str,
+    plan,
+    favorite_colors: list[str],
+    preferred_styles: list[str],
+    disliked_items: list[str],
+) -> dict | None:
+    items_pool = _default_pool(outfit_category)
+    if not items_pool:
+        return None
+
+    return _select_best_item(
+        items=items_pool,
+        outfit_category=outfit_category,
+        plan=plan,
+        favorite_colors=favorite_colors,
+        preferred_styles=preferred_styles,
+        disliked_items=disliked_items,
+        use_default_rules=True,
+    )
 
 
 def _select_best_item(
@@ -191,61 +296,85 @@ def generate_outfit(
     if wardrobe is None:
         wardrobe = load_wardrobe()
 
-    allow_defaults = mode != StylingMode.MY_WARDROBE
-    wardrobe_identities = _build_wardrobe_identity_set(wardrobe) if not allow_defaults else set()
-
     favorite_colors = memory.get("favorite_colors", [])
     preferred_styles = memory.get("preferred_styles", [])
     disliked_items = memory.get("disliked_items", [])
 
-    selected_items = []
-    used_wardrobe = False
-    used_defaults = False
+    wardrobe_identities = _build_wardrobe_identity_set(wardrobe)
+    selected_items: list[dict] = []
+    wardrobe_count = 0
+    suggested_count = 0
 
-    for category in OUTFIT_CATEGORIES:
-        items_pool, use_default_rules = _get_category_items(
-            wardrobe,
-            category,
-            allow_defaults=allow_defaults,
-        )
+    if mode == StylingMode.WARDROBE_PLUS_AI:
+        for category in OUTFIT_CATEGORIES:
+            wardrobe_item = _pick_wardrobe_item(
+                wardrobe,
+                category,
+                plan,
+                favorite_colors,
+                preferred_styles,
+                disliked_items,
+            )
+            if wardrobe_item:
+                selected_items.append(
+                    _with_provenance(wardrobe_item, source="wardrobe", owned=True)
+                )
+                wardrobe_count += 1
+                continue
 
-        if not items_pool:
-            continue
+            if suggested_count >= MAX_HYBRID_SUGGESTED_ITEMS:
+                continue
 
-        if use_default_rules:
-            used_defaults = True
-        else:
-            used_wardrobe = True
-
-        best_item = _select_best_item(
-            items=items_pool,
-            outfit_category=category,
-            plan=plan,
-            favorite_colors=favorite_colors,
-            preferred_styles=preferred_styles,
-            disliked_items=disliked_items,
-            use_default_rules=use_default_rules,
-        )
-
-        if best_item:
-            selected_items.append(dict(best_item))
-
-    if used_wardrobe and used_defaults:
-        reason = (
-            "This outfit combines your saved wardrobe pieces with default suggestions "
-            "for categories you have not added yet, using event, style, saved memory, "
-            "and color preferences."
-        )
-    elif used_wardrobe:
-        reason = (
-            "This outfit was built from your saved wardrobe by picking the best item "
-            "from each category based on event, style, saved memory, and color preferences."
-        )
+            suggested_item = _pick_suggested_item(
+                category,
+                plan,
+                favorite_colors,
+                preferred_styles,
+                disliked_items,
+            )
+            if suggested_item:
+                selected_items.append(
+                    _with_provenance(suggested_item, source="suggested", owned=False)
+                )
+                suggested_count += 1
     else:
-        reason = (
-            "This outfit was built from the default wardrobe using event, style, "
-            "saved memory, and color preferences."
-        )
+        allow_defaults = mode != StylingMode.MY_WARDROBE
+
+        for category in OUTFIT_CATEGORIES:
+            items_pool, use_default_rules = _get_category_items(
+                wardrobe,
+                category,
+                allow_defaults=allow_defaults,
+            )
+
+            if not items_pool:
+                continue
+
+            best_item = _select_best_item(
+                items=items_pool,
+                outfit_category=category,
+                plan=plan,
+                favorite_colors=favorite_colors,
+                preferred_styles=preferred_styles,
+                disliked_items=disliked_items,
+                use_default_rules=use_default_rules,
+            )
+
+            if not best_item:
+                continue
+
+            if use_default_rules:
+                selected_items.append(
+                    _with_provenance(best_item, source="suggested", owned=False)
+                )
+                suggested_count += 1
+            else:
+                selected_items.append(
+                    _with_provenance(best_item, source="wardrobe", owned=True)
+                )
+                wardrobe_count += 1
+
+    reason = _build_outfit_reason(mode, wardrobe_count, suggested_count)
 
     outfit = {
         "event": plan.event,
@@ -256,19 +385,12 @@ def generate_outfit(
         "reason": reason,
     }
 
-    if not selected_items:
-        if mode == StylingMode.MY_WARDROBE:
-            outfit["reason"] = (
-                "No items in your wardrobe matched this request. "
-                "Add pieces to your wardrobe or try a different prompt."
-            )
-        else:
-            outfit["reason"] = (
-                "No matching items were found for this request. "
-                "Try adjusting your request or adding more clothes to your wardrobe."
-            )
-    elif mode == StylingMode.MY_WARDROBE and wardrobe_identities:
+    if mode == StylingMode.MY_WARDROBE and selected_items and wardrobe_identities:
         for item in selected_items:
+            if item.get("source") != "wardrobe" or item.get("owned") is not True:
+                raise RuntimeError(
+                    f"my_wardrobe outfit item {item.get('name')!r} has invalid provenance"
+                )
             if wardrobe_item_key(item) not in wardrobe_identities:
                 raise RuntimeError(
                     f"my_wardrobe outfit item {item.get('name')!r} is not in the wardrobe snapshot"

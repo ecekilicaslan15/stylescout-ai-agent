@@ -80,6 +80,8 @@ class TestMyWardrobeMode:
 
         for item in response.data["outfit"]["items"]:
             assert wardrobe_item_key(item) in allowed
+            assert item["source"] == "wardrobe"
+            assert item["owned"] is True
 
     def test_missing_category_is_omitted_not_filled_with_fake_item(
         self,
@@ -100,6 +102,8 @@ class TestMyWardrobeMode:
 
         assert len(items) == 1
         assert items[0]["name"] == CONTEXT_TOP["name"]
+        assert items[0]["source"] == "wardrobe"
+        assert items[0]["owned"] is True
         assert {item["name"] for item in items}.isdisjoint(DEFAULT_ITEM_NAMES)
 
     def test_empty_wardrobe_returns_clear_result_without_crashing(
@@ -144,28 +148,25 @@ class TestMyWardrobeMode:
         assert "wardrobe" in outfit["reason"].lower()
 
 
-class TestUnfinishedModesBaseline:
-    @pytest.mark.parametrize(
-        "mode",
-        [StylingMode.WARDROBE_PLUS_AI, StylingMode.AI_INSPIRATION],
-    )
-    def test_unfinished_modes_still_use_default_fallback(
+class TestAiInspirationBaseline:
+    def test_ai_inspiration_still_uses_default_fallback(
         self,
         stylist_agent: StylistAgent,
         casual_plan: Plan,
         empty_memory: dict,
-        mode: StylingMode,
     ):
         context = AgentContext(
             user_input="casual outfit",
-            mode=mode,
+            mode=StylingMode.AI_INSPIRATION,
             plan=casual_plan,
             memory=empty_memory,
             wardrobe=[CONTEXT_TOP],
         )
 
         response = stylist_agent.run("casual outfit", {"intent": "outfit_request"}, context)
-        item_names = {item["name"] for item in response.data["outfit"]["items"]}
+        items = response.data["outfit"]["items"]
+        item_names = {item["name"] for item in items}
 
         assert CONTEXT_TOP["name"] in item_names
         assert item_names & DEFAULT_ITEM_NAMES
+        assert sum(1 for item in items if item["source"] == "suggested") >= 2
