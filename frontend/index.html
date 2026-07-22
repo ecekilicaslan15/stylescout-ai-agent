@@ -391,12 +391,18 @@ input{font-family:var(--font-body);}
       </div>
 
       <div class="modes" role="radiogroup" aria-label="Styling mode">
-        <div class="mode active" role="radio" aria-checked="true">
+        <button class="mode active" data-mode="my_wardrobe" onclick="setMode(this)" role="radio" aria-checked="true">
           <div class="m-title"><span class="m-dot"></span>My wardrobe</div>
           <div class="m-desc">Only garments you already own.</div>
-        </div>
-        <!-- TODO: Phase 1 — Wardrobe + AI mode (backend mode param) -->
-        <!-- TODO: Phase 1 — AI inspiration mode (backend mode param) -->
+        </button>
+        <button class="mode" data-mode="wardrobe_plus_ai" onclick="setMode(this)" role="radio" aria-checked="false">
+          <div class="m-title"><span class="m-dot"></span>Wardrobe + AI</div>
+          <div class="m-desc">Your closet first — AI may suggest missing pieces.</div>
+        </button>
+        <button class="mode" data-mode="ai_inspiration" onclick="setMode(this)" role="radio" aria-checked="false">
+          <div class="m-title"><span class="m-dot"></span>AI inspiration</div>
+          <div class="m-desc">Fresh outfit ideas, unconstrained by your closet.</div>
+        </button>
       </div>
     </section>
 
@@ -478,9 +484,12 @@ const COLOR_HEX = {
 };
 let activeCategory="All", activeColor=null, favOnly=false;
 
-/* styling mode — wardrobe only until backend mode param ships (Phase 1) */
-const currentMode = "wardrobe";
-const MODE_LABEL = { wardrobe: "My wardrobe" };
+let currentMode = "my_wardrobe";
+const MODE_LABEL = {
+  my_wardrobe: "My wardrobe",
+  wardrobe_plus_ai: "Wardrobe + AI",
+  ai_inspiration: "AI inspiration",
+};
 
 /* ---------- Landing → Wardrobe transition ---------- */
 let opened=false;
@@ -591,6 +600,14 @@ function focusPrompt(){
   document.getElementById('prompt').focus();
   document.querySelector('.console').scrollIntoView({behavior:'smooth',block:'center'});
 }
+function setMode(el){
+  currentMode=el.dataset.mode;
+  document.querySelectorAll('.mode').forEach(m=>{
+    const on=m===el;
+    m.classList.toggle('active',on);
+    m.setAttribute('aria-checked',on);
+  });
+}
 
 /* ============================================================
    AI STYLING SESSION
@@ -610,7 +627,7 @@ async function requestOutfit(prompt){
   const response=await fetch('/api/outfits',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({prompt}),
+    body:JSON.stringify({prompt, mode: currentMode}),
   });
   if(!response.ok){
     let detail=`Failed to generate outfit (${response.status})`;
@@ -751,7 +768,7 @@ function renderBoard(){
     return `
       <div class="bg-item ${it.ai?'ai-suggested':''}" data-slot="${slot}"
            style="${pos}background-image:url('${it.image_url}')">
-        ${it.ai?`<span class="ai-badge">✦ AI ${currentMode==='hybrid'?'suggests':'idea'}</span>`:''}
+        ${it.ai?`<span class="ai-badge">✦ AI ${currentMode==='wardrobe_plus_ai'?'suggests':'idea'}</span>`:''}
         <button class="swap-btn" aria-label="Replace ${slot}" onclick="event.stopPropagation();swapSlot('${slot}')">⟲</button>
         <span class="slot-tag">${(it.name||slot)}${it.ai?'':' · yours'}</span>
       </div>`;

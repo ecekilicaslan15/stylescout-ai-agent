@@ -2,6 +2,7 @@
 
 from unittest.mock import patch
 
+import pytest
 from fastapi.testclient import TestClient
 
 from api.main import (
@@ -12,6 +13,7 @@ from api.main import (
     to_agent_item,
 )
 from models.plan import Plan
+from models.styling_mode import StylingMode
 
 
 client = TestClient(app)
@@ -99,7 +101,10 @@ class TestOutfitsEndpoint:
         assert payload["outfit"]["items"][0]["category"] == "Tops"
         assert payload["stylist_notes"] == "Linen breathes well in warm weather."
         assert payload["plan"]["intent"] == "outfit_request"
-        mock_run_fashion_agent.assert_called_once_with("What should I wear today?")
+        mock_run_fashion_agent.assert_called_once_with(
+            "What should I wear today?",
+            mode=StylingMode.MY_WARDROBE,
+        )
 
     def test_create_outfit_integration(self):
         response = client.post(
@@ -111,6 +116,75 @@ class TestOutfitsEndpoint:
         payload = response.json()
         assert payload["outfit"] is not None
         assert isinstance(payload["outfit"]["items"], list)
+
+
+class TestOutfitModePlumbing:
+    @patch("api.main.run_fashion_agent")
+    @patch("api.main.update_wardrobe_from_input", return_value=None)
+    @patch("api.main.update_memory_from_input")
+    def test_missing_mode_defaults_to_my_wardrobe(
+        self,
+        mock_update_memory,
+        mock_update_wardrobe,
+        mock_run_fashion_agent,
+    ):
+        mock_run_fashion_agent.return_value = {
+            "plan": Plan(intent="outfit_request"),
+            "memory": {},
+            "outfit": None,
+            "message": "Done",
+            "stylist_notes": None,
+        }
+
+        response = client.post("/api/outfits", json={"prompt": "casual outfit"})
+
+        assert response.status_code == 200
+        mock_run_fashion_agent.assert_called_once_with(
+            "casual outfit",
+            mode=StylingMode.MY_WARDROBE,
+        )
+
+    @pytest.mark.parametrize(
+        "mode",
+        [
+            StylingMode.MY_WARDROBE,
+            StylingMode.WARDROBE_PLUS_AI,
+            StylingMode.AI_INSPIRATION,
+        ],
+    )
+    @patch("api.main.run_fashion_agent")
+    @patch("api.main.update_wardrobe_from_input", return_value=None)
+    @patch("api.main.update_memory_from_input")
+    def test_valid_modes_are_accepted(
+        self,
+        mock_update_memory,
+        mock_update_wardrobe,
+        mock_run_fashion_agent,
+        mode: StylingMode,
+    ):
+        mock_run_fashion_agent.return_value = {
+            "plan": Plan(intent="outfit_request"),
+            "memory": {},
+            "outfit": None,
+            "message": "Done",
+            "stylist_notes": None,
+        }
+
+        response = client.post(
+            "/api/outfits",
+            json={"prompt": "casual outfit", "mode": mode.value},
+        )
+
+        assert response.status_code == 200
+        mock_run_fashion_agent.assert_called_once_with("casual outfit", mode=mode)
+
+    def test_invalid_mode_is_rejected(self):
+        response = client.post(
+            "/api/outfits",
+            json={"prompt": "casual outfit", "mode": "invalid_mode"},
+        )
+
+        assert response.status_code == 422
 
 
 class TestInlineEditEndpoint:

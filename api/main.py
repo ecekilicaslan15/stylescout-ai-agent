@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 
 from memory.memory_store import update_memory_from_input
 from models.plan import Plan, plan_to_dict
+from models.styling_mode import DEFAULT_STYLING_MODE, StylingMode
 from orchestrator.fashion_orchestrator import run_fashion_agent, run_inline_edit
 from wardrobe.constants import CATEGORIES
 from wardrobe.database import get_db_path, init_wardrobe_db, wardrobe_connection
@@ -69,6 +70,7 @@ DISPLAY_CATEGORY_TO_AGENT = {
 
 class OutfitRequest(BaseModel):
     prompt: str = Field(min_length=1)
+    mode: StylingMode = DEFAULT_STYLING_MODE
 
 
 class InlineEditRequest(BaseModel):
@@ -323,7 +325,7 @@ def create_outfit(request: OutfitRequest) -> dict:
     except Exception:
         wardrobe_update = None
 
-    result = run_fashion_agent(prompt)
+    result = run_fashion_agent(prompt, mode=request.mode)
     return serialize_fashion_agent_result(result, wardrobe_update)
 
 

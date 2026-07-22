@@ -10,6 +10,7 @@ from context.context_builder import ContextBuilder
 from memory.memory_manager import load_memory
 from models.agent_response import AgentResponse
 from models.plan import plan_to_dict
+from models.styling_mode import DEFAULT_STYLING_MODE, StylingMode
 from wardrobe.repository_factory import create_wardrobe_repository
 from wardrobe.wardrobe_repository import WardrobeRepository
 
@@ -63,7 +64,7 @@ class FashionOrchestrator:
 
         return ["stylist_agent"]
 
-    def run(self, user_input: str) -> dict:
+    def run(self, user_input: str, mode: StylingMode = DEFAULT_STYLING_MODE) -> dict:
         plan = plan_user_request(user_input)
         plan_dict = plan_to_dict(plan)
         memory = load_memory()
@@ -79,6 +80,7 @@ class FashionOrchestrator:
             wardrobe=wardrobe,
             conversation_history=[],
             wardrobe_repository=self._wardrobe_repository,
+            mode=mode,
         )
         outfit = None
         message = None
@@ -158,15 +160,21 @@ class FashionOrchestrator:
 _orchestrator = FashionOrchestrator()
 
 
-def run_fashion_agent(user_input: str) -> dict:
+def run_fashion_agent(
+    user_input: str,
+    mode: StylingMode = DEFAULT_STYLING_MODE,
+) -> dict:
     """Public entry point used by the Streamlit app."""
-    return _orchestrator.run(user_input)
+    return _orchestrator.run(user_input, mode=mode)
 
 
-def run_fashion_agent_response(user_input: str) -> AgentResponse:
+def run_fashion_agent_response(
+    user_input: str,
+    mode: StylingMode = DEFAULT_STYLING_MODE,
+) -> AgentResponse:
     """Run the fashion pipeline and return a unified AgentResponse for the UI."""
     try:
-        result = _orchestrator.run(user_input)
+        result = _orchestrator.run(user_input, mode=mode)
         message = result.get("message") or ""
         outfit = result.get("outfit")
 
