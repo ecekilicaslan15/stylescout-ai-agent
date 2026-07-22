@@ -10,6 +10,7 @@ from memory.memory_manager import load_memory
 from models.agent_context import AgentContext
 from models.agent_response import AgentResponse
 from models.plan import Plan
+from models.styling_mode import DEFAULT_STYLING_MODE, StylingMode
 from services.rag_service import RagService
 from services.stylist_notes_builder import build_knowledge_query, build_stylist_notes
 
@@ -51,6 +52,27 @@ OUTFIT_TO_WARDROBE_KEY = {
     "outerwear": "outerwear",
     "accessory": "accessories",
 }
+
+# DEFAULT_ITEMS catalogue names — used by tests and unfinished modes only.
+DEFAULT_ITEM_NAMES = frozenset(item["name"] for item in DEFAULT_ITEMS)
+
+
+def wardrobe_item_key(item: dict) -> tuple:
+    """Stable wardrobe identity: repository id when present, else (category, name)."""
+    item_id = item.get("id")
+    if item_id is not None:
+        return ("id", item_id)
+    category = _normalize_category(item.get("category")) or (item.get("category") or "")
+    name = (item.get("name") or "").strip().lower()
+    return ("name", category, name)
+
+
+def _build_wardrobe_identity_set(wardrobe: dict) -> set[tuple]:
+    keys: set[tuple] = set()
+    for category_items in wardrobe.values():
+        for item in category_items:
+            keys.add(wardrobe_item_key(item))
+    return keys
 
 
 def _normalize_category(category: str | None) -> str | None:
@@ -99,12 +121,20 @@ def _score_item(
     return score
 
 
-def _get_category_items(wardrobe: dict, outfit_category: str) -> tuple[list[dict], bool]:
+def _get_category_items(
+    wardrobe: dict,
+    outfit_category: str,
+    *,
+    allow_defaults: bool,
+) -> tuple[list[dict], bool]:
     wardrobe_key = OUTFIT_TO_WARDROBE_KEY[outfit_category]
     wardrobe_items = list(wardrobe.get(wardrobe_key, []))
 
     if wardrobe_items:
         return wardrobe_items, False
+
+    if not allow_defaults:
+        return [], False
 
     default_items = [
         item
@@ -152,9 +182,17 @@ def _select_best_item(
     return best_item
 
 
-def generate_outfit(plan, memory: dict, wardrobe: dict | None = None) -> dict:
+def generate_outfit(
+    plan,
+    memory: dict,
+    wardrobe: dict | None = None,
+    mode: StylingMode = DEFAULT_STYLING_MODE,
+) -> dict:
     if wardrobe is None:
         wardrobe = load_wardrobe()
+
+    allow_defaults = mode != StylingMode.MY_WARDROBE
+    wardrobe_identities = _build_wardrobe_identity_set(wardrobe) if not allow_defaults else set()
 
     favorite_colors = memory.get("favorite_colors", [])
     preferred_styles = memory.get("preferred_styles", [])
@@ -165,7 +203,11 @@ def generate_outfit(plan, memory: dict, wardrobe: dict | None = None) -> dict:
     used_defaults = False
 
     for category in OUTFIT_CATEGORIES:
-        items_pool, use_default_rules = _get_category_items(wardrobe, category)
+        items_pool, use_default_rules = _get_category_items(
+            wardrobe,
+            category,
+            allow_defaults=allow_defaults,
+        )
 
         if not items_pool:
             continue
@@ -186,7 +228,7 @@ def generate_outfit(plan, memory: dict, wardrobe: dict | None = None) -> dict:
         )
 
         if best_item:
-            selected_items.append(best_item)
+            selected_items.append(dict(best_item))
 
     if used_wardrobe and used_defaults:
         reason = (
@@ -215,10 +257,22 @@ def generate_outfit(plan, memory: dict, wardrobe: dict | None = None) -> dict:
     }
 
     if not selected_items:
-        outfit["reason"] = (
-            "No matching items were found for this request. "
-            "Try adjusting your request or adding more clothes to your wardrobe."
-        )
+        if mode == StylingMode.MY_WARDROBE:
+            outfit["reason"] = (
+                "No items in your wardrobe matched this request. "
+                "Add pieces to your wardrobe or try a different prompt."
+            )
+        else:
+            outfit["reason"] = (
+                "No matching items were found for this request. "
+                "Try adjusting your request or adding more clothes to your wardrobe."
+            )
+    elif mode == StylingMode.MY_WARDROBE and wardrobe_identities:
+        for item in selected_items:
+            if wardrobe_item_key(item) not in wardrobe_identities:
+                raise RuntimeError(
+                    f"my_wardrobe outfit item {item.get('name')!r} is not in the wardrobe snapshot"
+                )
 
     return outfit
 
@@ -257,7 +311,7 @@ class StylistAgent(BaseAgent):
         plan: dict,
         context: AgentContext | dict | None = None,
     ) -> AgentResponse:
-        memory, wardrobe, plan_obj, query_input = self._resolve_runtime(
+        memory, wardrobe, plan_obj, query_input, mode = self._resolve_runtime(
             user_input, plan, context
         )
 
@@ -265,6 +319,7 @@ class StylistAgent(BaseAgent):
             plan=plan_obj,
             memory=memory,
             wardrobe=wardrobe,
+            mode=mode,
         )
 
         stylist_notes = self._retrieve_stylist_notes(query_input, plan_obj)
@@ -285,27 +340,30 @@ class StylistAgent(BaseAgent):
         user_input: str,
         plan: dict,
         context: AgentContext | dict | None,
-    ) -> tuple[dict, dict, Plan, str]:
-        """Resolve memory, wardrobe, plan, and query text without affecting outfit scoring."""
+    ) -> tuple[dict, dict, Plan, str, StylingMode]:
+        """Resolve memory, wardrobe, plan, mode, and query text for outfit generation."""
+        mode = DEFAULT_STYLING_MODE
         if isinstance(context, AgentContext):
             repository = context.wardrobe_repository or self._wardrobe_repository
             memory = resolve_memory(context.memory)
             wardrobe = resolve_wardrobe(context.wardrobe, repository)
             plan_obj = resolve_plan(plan, context)
             query_input = context.user_input or user_input
+            mode = context.mode
         elif isinstance(context, dict):
             repository = context.get("wardrobe_repository") or self._wardrobe_repository
             memory = resolve_memory(context.get("memory"))
             wardrobe = resolve_wardrobe(context.get("wardrobe"), repository)
             plan_obj = resolve_plan(plan, context)
             query_input = user_input
+            mode = context.get("mode", DEFAULT_STYLING_MODE)
         else:
             memory = load_memory()
             wardrobe = resolve_wardrobe(None, self._wardrobe_repository)
             plan_obj = resolve_plan(plan, context)
             query_input = user_input
 
-        return memory, wardrobe, plan_obj, query_input
+        return memory, wardrobe, plan_obj, query_input, mode
 
     def _retrieve_stylist_notes(self, user_input: str, plan_obj: Plan) -> str:
         """Retrieve fashion knowledge after outfit generation and format stylist notes."""
