@@ -159,6 +159,8 @@ input{font-family:var(--font-body);}
 .mode.active .m-dot{background:var(--turquoise);border-color:var(--turquoise-dark);}
 .mode .m-desc{font-size:11.5px;line-height:1.5;color:var(--text-secondary);}
 .mode.active .m-desc{color:var(--turquoise-dark);}
+.mode-desc-hint{font-size:12.5px;line-height:1.55;color:var(--text-secondary);margin-top:12px;padding:10px 14px;background:var(--background);border:1px solid var(--border);border-radius:var(--radius-md);position:relative;z-index:1;}
+.mode-desc-hint strong{color:var(--text-primary);font-weight:600;}
 
 /* memory */
 .memory{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:18px 44px 26px;padding:0 4px;}
@@ -270,8 +272,14 @@ input{font-family:var(--font-body);}
 .bg-item .swap-btn{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;background:rgba(251,253,252,0.94);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--turquoise-dark);font-size:14px;opacity:0;transition:opacity .25s,transform .2s;}
 .bg-item:hover .swap-btn{opacity:1;}
 .bg-item .swap-btn:hover{transform:rotate(180deg);border-color:var(--turquoise);}
-.bg-item.ai-suggested{outline:2px dashed var(--turquoise);outline-offset:3px;}
-.bg-item .ai-badge{position:absolute;top:8px;left:8px;background:var(--turquoise-soft);color:var(--turquoise-dark);border:1px solid var(--turquoise);font-family:var(--font-mono);font-size:8.5px;letter-spacing:0.06em;text-transform:uppercase;padding:3px 8px;border-radius:5px;}
+.bg-item.item-suggested{outline:2px dashed var(--turquoise);outline-offset:3px;}
+.provenance-badge{position:absolute;top:8px;left:8px;font-family:var(--font-mono);font-size:8.5px;letter-spacing:0.06em;text-transform:uppercase;padding:3px 8px;border-radius:5px;border:1px solid;}
+.provenance-owned{background:var(--turquoise-soft);color:var(--turquoise-dark);border-color:var(--turquoise);}
+.provenance-suggested{background:var(--surface);color:var(--text-secondary);border-color:var(--border);}
+
+.outfit-summary{font-family:var(--font-mono);font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--turquoise-dark);text-align:center;margin:8px 0 2px;}
+.outfit-empty-notice{text-align:center;padding:28px 20px 8px;color:var(--text-secondary);font-size:14px;line-height:1.6;}
+.outfit-empty-notice p{font-family:var(--font-display);font-style:italic;font-size:17px;color:var(--text-primary);margin-bottom:8px;max-width:480px;margin-inline:auto;}
 
 .why{text-align:center;margin-bottom:20px;}
 .why p{font-family:var(--font-display);font-style:italic;font-size:18px;line-height:1.55;color:var(--text-primary);max-width:520px;margin:0 auto;}
@@ -391,19 +399,20 @@ input{font-family:var(--font-body);}
       </div>
 
       <div class="modes" role="radiogroup" aria-label="Styling mode">
-        <button class="mode active" data-mode="my_wardrobe" onclick="setMode(this)" role="radio" aria-checked="true">
+        <button class="mode active" data-mode="my_wardrobe" onclick="setMode(this)" role="radio" aria-checked="true" aria-pressed="true">
           <div class="m-title"><span class="m-dot"></span>My wardrobe</div>
-          <div class="m-desc">Only garments you already own.</div>
+          <div class="m-desc">Uses only pieces you own.</div>
         </button>
-        <button class="mode" data-mode="wardrobe_plus_ai" onclick="setMode(this)" role="radio" aria-checked="false">
+        <button class="mode" data-mode="wardrobe_plus_ai" onclick="setMode(this)" role="radio" aria-checked="false" aria-pressed="false">
           <div class="m-title"><span class="m-dot"></span>Wardrobe + AI</div>
-          <div class="m-desc">Your closet first — AI may suggest missing pieces.</div>
+          <div class="m-desc">Your wardrobe first, up to 2 suggested gaps.</div>
         </button>
-        <button class="mode" data-mode="ai_inspiration" onclick="setMode(this)" role="radio" aria-checked="false">
+        <button class="mode" data-mode="ai_inspiration" onclick="setMode(this)" role="radio" aria-checked="false" aria-pressed="false">
           <div class="m-title"><span class="m-dot"></span>AI inspiration</div>
-          <div class="m-desc">Fresh outfit ideas, unconstrained by your closet.</div>
+          <div class="m-desc">Independent inspiration, ownership checked after.</div>
         </button>
       </div>
+      <p id="modeDescHint" class="mode-desc-hint" aria-live="polite"><strong>My wardrobe:</strong> Uses only pieces you own.</p>
     </section>
 
     <!-- TODO: Phase 2 — Memory panel (GET /api/memory) -->
@@ -455,7 +464,12 @@ input{font-family:var(--font-body);}
     <div class="steps" id="steps"></div>
 
     <div class="board-wrap" id="boardWrap">
+      <div class="outfit-summary" id="outfitSummary" aria-live="polite"></div>
       <div class="board" id="board"></div>
+      <div class="outfit-empty-notice" id="outfitEmpty" hidden>
+        <p id="outfitEmptyReason"></p>
+        <span>No outfit items to display.</span>
+      </div>
       <div class="why">
         <p id="whyText"></p>
         <span>From your stylist agent</span>
@@ -475,6 +489,7 @@ input{font-family:var(--font-body);}
    WARDROBE DATA — loaded from GET /api/wardrobe/items
    ============================================================ */
 let wardrobeItems = [];
+const API_BASE_URL = 'http://127.0.0.1:8000';
 const favorites = new Set();
 const CATEGORIES = ["All","Tops","Bottoms","Shoes","Outerwear","Accessories"];
 const COLOR_HEX = {
@@ -490,12 +505,17 @@ const MODE_LABEL = {
   wardrobe_plus_ai: "Wardrobe + AI",
   ai_inspiration: "AI inspiration",
 };
+const MODE_DESC = {
+  my_wardrobe: "Uses only pieces you own.",
+  wardrobe_plus_ai: "Uses your wardrobe first and suggests up to 2 missing pieces.",
+  ai_inspiration: "Creates an independent inspiration outfit and checks what you already own.",
+};
 
 /* ---------- Landing → Wardrobe transition ---------- */
 let opened=false;
 
 async function loadWardrobeItems(){
-  const response=await fetch('/api/wardrobe/items');
+  const response=await fetch(`${API_BASE_URL}/api/wardrobe/items`);
   if(!response.ok){
     throw new Error(`Failed to load wardrobe (${response.status})`);
   }
@@ -606,7 +626,29 @@ function setMode(el){
     const on=m===el;
     m.classList.toggle('active',on);
     m.setAttribute('aria-checked',on);
+    m.setAttribute('aria-pressed',on);
   });
+  updateModeDescHint();
+}
+function updateModeDescHint(){
+  const hint=document.getElementById('modeDescHint');
+  if(!hint) return;
+  hint.innerHTML=`<strong>${MODE_LABEL[currentMode]}:</strong> ${MODE_DESC[currentMode]}`;
+}
+function provenanceLabel(item){
+  if(item.source==='wardrobe'||item.owned===true) return 'owned';
+  if(item.source==='suggested'||item.owned===false) return 'suggested';
+  return null;
+}
+function provenanceBadgeHtml(item){
+  const label=provenanceLabel(item);
+  if(label==='owned'){
+    return '<span class="provenance-badge provenance-owned">Owned</span>';
+  }
+  if(label==='suggested'){
+    return '<span class="provenance-badge provenance-suggested">Suggested</span>';
+  }
+  return '';
 }
 
 /* ============================================================
@@ -624,7 +666,7 @@ let sessionActive=false;
 let currentOutfitResult=null;
 
 async function requestOutfit(prompt){
-  const response=await fetch('/api/outfits',{
+  const response=await fetch(`${API_BASE_URL}/api/outfits`,{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({prompt, mode: currentMode}),
@@ -654,14 +696,14 @@ function applyOutfitResponse(data){
 
 function buildWhyText(data){
   const parts=[];
-  if(data.outfit?.reason) parts.push(`"${data.outfit.reason}"`);
+  if(data.outfit?.reason) parts.push(data.outfit.reason);
   if(data.stylist_notes) parts.push(data.stylist_notes);
-  if(!parts.length&&data.message) parts.push(`"${data.message}"`);
+  if(!parts.length&&data.message) parts.push(data.message);
   return parts.join(' ');
 }
 
 async function requestInlineEdit(payload){
-  const response=await fetch('/api/outfits/inline-edit',{
+  const response=await fetch(`${API_BASE_URL}/api/outfits/inline-edit`,{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify(payload),
@@ -716,11 +758,26 @@ function openSessionShell(text,skipThinking){
 
 function runThinking(text){
   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const steps=[
-    ["Reading your wardrobe — "+wardrobeItems.length+" pieces","wardrobe agent"],
-    ["Recalling your saved style preferences","memory agent"],
-    ["Composing from what you own","stylist agent"],
-  ];
+  const wardrobeStep=["Reviewing your wardrobe — "+wardrobeItems.length+" pieces","wardrobe agent"];
+  const memoryStep=["Recalling your saved style preferences","memory agent"];
+  const stepsByMode={
+    my_wardrobe:[
+      wardrobeStep,
+      memoryStep,
+      ["Composing only from what you own","stylist agent"],
+    ],
+    wardrobe_plus_ai:[
+      wardrobeStep,
+      memoryStep,
+      ["Filling wardrobe gaps when needed","stylist agent"],
+    ],
+    ai_inspiration:[
+      ["Creating an independent style direction","stylist agent"],
+      memoryStep,
+      ["Checking which inspired pieces you already own","wardrobe agent"],
+    ],
+  };
+  const steps=stepsByMode[currentMode]||stepsByMode.my_wardrobe;
   const wrap=document.getElementById('steps');
   wrap.innerHTML=steps.map(s=>`
     <div class="step">
@@ -753,9 +810,12 @@ function runThinking(text){
       sessionOutfit={};
       sessionActive=false;
       currentOutfitResult=null;
-      document.getElementById('whyText').textContent=error.message;
+      document.getElementById('outfitSummary').textContent=`Generated with ${MODE_LABEL[currentMode]}`;
+      document.getElementById('board').innerHTML='';
+      document.getElementById('outfitEmpty').hidden=false;
+      document.getElementById('outfitEmptyReason').textContent=error.message;
+      document.getElementById('whyText').textContent='';
       document.getElementById('boardWrap').classList.add('show');
-      renderBoard();
     });
 }
 
@@ -765,19 +825,39 @@ function renderBoard(){
     const it=sessionOutfit[slot];if(!it)return'';
     const p=SLOT_POS[i];
     const pos=`width:${p.w};height:${p.h};${p.top?`top:${p.top};`:''}${p.bottom?`bottom:${p.bottom};`:''}${p.left?`left:${p.left};`:''}${p.right?`right:${p.right};`:''}transform:rotate(${p.rot}deg);z-index:${p.z};animation-delay:${i*140}ms;`;
+    const suggested=provenanceLabel(it)==='suggested';
     return `
-      <div class="bg-item ${it.ai?'ai-suggested':''}" data-slot="${slot}"
+      <div class="bg-item ${suggested?'item-suggested':''}" data-slot="${slot}"
            style="${pos}background-image:url('${it.image_url}')">
-        ${it.ai?`<span class="ai-badge">✦ AI ${currentMode==='wardrobe_plus_ai'?'suggests':'idea'}</span>`:''}
+        ${provenanceBadgeHtml(it)}
         <button class="swap-btn" aria-label="Replace ${slot}" onclick="event.stopPropagation();swapSlot('${slot}')">⟲</button>
-        <span class="slot-tag">${(it.name||slot)}${it.ai?'':' · yours'}</span>
+        <span class="slot-tag">${it.name||slot}</span>
       </div>`;
   }).join('');
 }
 
 function revealBoard(data){
-  renderBoard();
-  document.getElementById('whyText').textContent=buildWhyText(data||currentOutfitResult||{});
+  const payload=data||currentOutfitResult||{};
+  const outfit=payload.outfit||{};
+  const items=outfit.items||[];
+  const summaryEl=document.getElementById('outfitSummary');
+  const emptyEl=document.getElementById('outfitEmpty');
+  const boardEl=document.getElementById('board');
+  const whyEl=document.getElementById('whyText');
+
+  summaryEl.textContent=`Generated with ${MODE_LABEL[currentMode]}`;
+
+  if(items.length===0){
+    boardEl.innerHTML='';
+    emptyEl.hidden=false;
+    document.getElementById('outfitEmptyReason').textContent=
+      outfit.reason||buildWhyText(payload)||'No items matched this request.';
+    whyEl.textContent='';
+  }else{
+    emptyEl.hidden=true;
+    renderBoard();
+    whyEl.textContent=buildWhyText(payload);
+  }
   document.getElementById('boardWrap').classList.add('show');
 }
 
@@ -833,6 +913,7 @@ function closeSession(){
   s.classList.remove('in');
   setTimeout(()=>s.classList.remove('show'),400);
 }
+updateModeDescHint();
 </script>
 </body>
 </html>
