@@ -134,6 +134,18 @@ input{font-family:var(--font-body);}
 .btn-add{border:1px solid var(--border);background:var(--surface);}
 .btn-add:hover{border-color:var(--turquoise);color:var(--turquoise-dark);}
 
+.add-item-dialog{position:fixed;inset:0;z-index:120;display:none;align-items:center;justify-content:center;padding:24px;}
+.add-item-dialog.show{display:flex;}
+.add-item-scrim{position:absolute;inset:0;background:rgba(20,18,16,.45);}
+.add-item-panel{position:relative;z-index:1;width:min(480px,100%);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);padding:24px 26px;box-shadow:var(--shadow-rest);}
+.add-item-panel h3{font-family:var(--font-display);font-size:24px;margin-bottom:16px;}
+.add-item-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.add-item-grid label{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text-secondary);}
+.add-item-grid label.full{grid-column:1 / -1;}
+.add-item-grid input,.add-item-grid select{border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 12px;font-size:14px;background:var(--background);color:var(--text-primary);}
+.add-item-error{margin-top:12px;color:#b42318;font-size:13px;}
+.add-item-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;}
+
 /* ---------- AI CONSOLE ---------- */
 .console{margin:0 44px 26px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);padding:24px 26px 20px;box-shadow:var(--shadow-rest);position:relative;overflow:hidden;}
 .console::before{content:'';position:absolute;top:-60px;right:-40px;width:240px;height:180px;background:radial-gradient(ellipse at center,var(--turquoise-soft),transparent 70%);opacity:.7;pointer-events:none;}
@@ -186,6 +198,16 @@ input{font-family:var(--font-body);}
 .fav-toggle{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-secondary);padding:8px 14px;border-radius:12px;border:1px solid var(--border);background:var(--surface);transition:all .2s;margin-left:auto;}
 .fav-toggle.active{border-color:var(--turquoise);color:var(--turquoise-dark);background:var(--turquoise-soft);}
 
+.saved-outfits-panel{padding:0 44px 40px;}
+.saved-outfits-panel h2{font-family:var(--font-display);font-weight:500;font-size:28px;margin-bottom:8px;}
+.saved-outfits-panel .saved-intro{color:var(--text-secondary);font-size:14px;margin-bottom:22px;}
+.saved-outfits-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
+.saved-outfit-card{border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;background:var(--surface);box-shadow:var(--shadow-rest);}
+.saved-outfit-meta{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--text-secondary);margin-bottom:10px;}
+.saved-outfit-summary{font-size:14px;font-weight:500;line-height:1.45;}
+.saved-outfit-reason{margin-top:8px;font-size:13px;color:var(--text-secondary);line-height:1.45;}
+.saved-outfits-empty{color:var(--text-secondary);font-size:14px;padding:28px 0;}
+
 /* masonry */
 .masonry{columns:4 230px;column-gap:18px;padding:0 44px;}
 .gcard{break-inside:avoid;margin-bottom:18px;position:relative;background:var(--surface);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-rest);cursor:pointer;transition:transform .3s var(--ease-settle),box-shadow .3s var(--ease-settle);animation:cardIn .7s var(--ease-settle) backwards;}
@@ -227,6 +249,20 @@ input{font-family:var(--font-body);}
 .dtag:nth-child(even){transform:rotate(2deg);}
 .dtag.tq{color:var(--turquoise-dark);border-color:var(--turquoise);background:var(--turquoise-soft);}
 .detail-actions{display:flex;flex-direction:column;gap:10px;}
+.btn-danger{color:#b42318;border:1px solid rgba(180,35,24,.25);background:transparent;}
+.btn-danger:hover{background:rgba(180,35,24,.06);}
+.btn-icon{display:inline-flex;align-items:center;gap:8px;}
+.detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+.detail-head h2{flex:1;margin:0;}
+.detail-delete{background:transparent;border:none;color:var(--text-secondary);cursor:pointer;padding:6px;font-size:18px;line-height:1;border-radius:var(--radius-md);}
+.detail-delete:hover{color:#b42318;background:rgba(180,35,24,.06);}
+.edit-item-dialog,.delete-item-dialog{position:fixed;inset:0;z-index:130;display:none;align-items:center;justify-content:center;padding:24px;}
+.edit-item-dialog.show,.delete-item-dialog.show{display:flex;}
+.edit-item-scrim,.delete-item-scrim{position:absolute;inset:0;background:rgba(20,18,16,.45);}
+.edit-item-panel,.delete-item-panel{position:relative;z-index:1;width:min(480px,100%);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);padding:24px 26px;box-shadow:var(--shadow-rest);}
+.delete-item-panel{width:min(400px,100%);}
+.delete-item-panel p{margin:12px 0 0;color:var(--text-secondary);font-size:14px;line-height:1.5;}
+.delete-item-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;}
 .btn-style{background:var(--text-primary);color:var(--surface);box-shadow:var(--shadow-rest);display:flex;align-items:center;gap:8px;justify-content:center;}
 .btn-style:hover{background:var(--turquoise-dark);transform:translateY(-2px);box-shadow:var(--shadow-lift);}
 .btn-style .spark{color:var(--turquoise);transition:color .25s;}
@@ -363,20 +399,20 @@ input{font-family:var(--font-body);}
 <div id="app">
   <nav class="rail" aria-label="Main navigation">
     <div class="mark">S<span style="color:var(--turquoise);">.</span></div>
-    <!-- TODO: Phase 2 — Dashboard -->
-    <!-- TODO: Phase 2 — Wardrobe nav (page is already active) -->
+    <button class="rail-item active" id="wardrobeRailBtn" title="My wardrobe" aria-label="My wardrobe" onclick="showWardrobeView()"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg></button>
+    <button class="rail-item" id="savedOutfitsRailBtn" title="Saved outfits" aria-label="Saved outfits"><svg viewBox="0 0 24 24"><path d="M6 4h12a2 2 0 0 1 2 2v14l-8-4-8 4V6a2 2 0 0 1 2-2z"/></svg></button>
     <button class="rail-item" title="Style me" aria-label="Style me" onclick="focusPrompt()"><svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4L12 3z"/></svg></button>
     <!-- TODO: Phase 3 — Profile -->
     <!-- TODO: Phase 3 — Settings -->
   </nav>
 
-  <main class="main">
+  <main class="main" id="wardrobeMain">
     <header class="wardrobe-head">
       <div>
         <span style="font-family:var(--font-display);font-weight:500;font-size:30px;letter-spacing:-0.01em;">My wardrobe</span>
         <span class="item-count" id="count">Loading…</span>
       </div>
-      <!-- TODO: Phase 2 — Add item (POST /api/wardrobe/items) -->
+      <button class="btn-sm btn-add" id="addItemBtn" type="button">+ Add item</button>
     </header>
 
     <!-- AI CONSOLE -->
@@ -430,9 +466,20 @@ input{font-family:var(--font-body);}
       <div class="empty-illust"><span class="eh e1"></span><span class="eh e2"></span><span class="eh e3"></span></div>
       <h3>Your closet is waiting</h3>
       <p>No pieces match here yet. Add your first item and StyleScout starts learning your wardrobe.</p>
-      <!-- TODO: Phase 2 — Add your first piece (POST /api/wardrobe/items) -->
+      <button class="btn-sm btn-add" id="addItemEmptyBtn" type="button">+ Add your first piece</button>
     </div>
   </main>
+
+  <section class="saved-outfits-panel" id="savedOutfitsPanel" hidden aria-label="Saved outfits">
+    <header class="wardrobe-head">
+      <div>
+        <span style="font-family:var(--font-display);font-weight:500;font-size:30px;letter-spacing:-0.01em;">Saved outfits</span>
+      </div>
+    </header>
+    <p class="saved-intro">Outfits you saved from styling sessions — tied to this browser only.</p>
+    <div class="saved-outfits-list" id="savedOutfitsList"></div>
+    <p class="saved-outfits-empty" id="savedOutfitsEmpty" hidden>No saved outfits yet. Generate a look and tap Save outfit.</p>
+  </section>
 </div>
 
 <!-- detail panel -->
@@ -440,14 +487,94 @@ input{font-family:var(--font-body);}
 <aside id="detail" aria-label="Item details">
   <button class="detail-close" onclick="closeDetail()" aria-label="Close">✕</button>
   <img id="dImg" src="" alt="">
-  <h2 id="dName"></h2>
+  <div class="detail-head">
+    <h2 id="dName"></h2>
+    <button class="detail-delete" id="deleteItemBtn" type="button" aria-label="Delete item" title="Delete item">🗑</button>
+  </div>
   <div class="tagrow" id="dTags"></div>
   <div class="detail-actions">
     <button class="btn-sm btn-style" onclick="styleFromDetail()"><span class="spark">✦</span>Style this piece</button>
-    <!-- TODO: Phase 2 — Edit details -->
+    <button class="btn-sm" id="editItemBtn" type="button">Edit details</button>
   </div>
   <div class="detail-meta" id="dMeta"></div>
 </aside>
+
+<div class="add-item-dialog" id="addItemDialog" role="dialog" aria-modal="true" aria-labelledby="addItemTitle">
+  <div class="add-item-scrim"></div>
+  <form class="add-item-panel" id="addItemForm">
+    <h3 id="addItemTitle">Add wardrobe item</h3>
+    <div class="add-item-grid">
+      <label class="full">Name
+        <input name="name" required autocomplete="off">
+      </label>
+      <label>Category
+        <select name="category" id="addItemCategory" required></select>
+      </label>
+      <label>Color
+        <input name="color" required autocomplete="off">
+      </label>
+      <label>Formality
+        <select name="style" required></select>
+      </label>
+      <label>Season / event
+        <select name="event" required></select>
+      </label>
+      <label class="full">Image URL <span style="opacity:.7">(optional)</span>
+        <input name="image_url" type="url" placeholder="https://…" autocomplete="off">
+      </label>
+    </div>
+    <p class="add-item-error" id="addItemError" hidden></p>
+    <div class="add-item-actions">
+      <button class="btn-sm add-item-cancel" type="button">Cancel</button>
+      <button class="btn-sm btn-add" type="submit">Save item</button>
+    </div>
+  </form>
+</div>
+
+<div class="edit-item-dialog" id="editItemDialog" role="dialog" aria-modal="true" aria-labelledby="editItemTitle">
+  <div class="edit-item-scrim"></div>
+  <form class="edit-item-panel add-item-panel" id="editItemForm">
+    <h3 id="editItemTitle">Edit wardrobe item</h3>
+    <div class="add-item-grid">
+      <label class="full">Name
+        <input name="name" required autocomplete="off">
+      </label>
+      <label>Category
+        <select name="category" id="editItemCategory" required></select>
+      </label>
+      <label>Color
+        <input name="color" required autocomplete="off">
+      </label>
+      <label>Formality
+        <select name="style" required></select>
+      </label>
+      <label>Season / event
+        <select name="event" required></select>
+      </label>
+      <label class="full">Image URL <span style="opacity:.7">(optional)</span>
+        <input name="image_url" type="url" placeholder="https://…" autocomplete="off">
+      </label>
+    </div>
+    <p class="add-item-error" id="editItemError" hidden></p>
+    <div class="add-item-actions">
+      <button class="btn-sm edit-item-cancel" type="button">Cancel</button>
+      <button class="btn-sm btn-add" type="submit">Save changes</button>
+    </div>
+  </form>
+</div>
+
+<div class="delete-item-dialog" id="deleteItemDialog" role="dialog" aria-modal="true" aria-labelledby="deleteItemTitle">
+  <div class="delete-item-scrim"></div>
+  <div class="delete-item-panel">
+    <h3 id="deleteItemTitle">Delete item?</h3>
+    <p>This will permanently remove <strong id="deleteItemName"></strong> from your wardrobe.</p>
+    <p class="add-item-error" id="deleteItemError" hidden></p>
+    <div class="delete-item-actions">
+      <button class="btn-sm delete-item-cancel" type="button">Cancel</button>
+      <button class="btn-sm btn-danger delete-item-confirm" type="button">Delete</button>
+    </div>
+  </div>
+</div>
 
 <!-- ================= AI STYLING SESSION ================= -->
 <div id="session" role="dialog" aria-modal="true" aria-label="AI styling session">
@@ -472,11 +599,11 @@ input{font-family:var(--font-body);}
       </div>
       <div class="why">
         <p id="whyText"></p>
-        <span>From your stylist agent</span>
+        <span id="composerFooter">From the rule-based composer</span>
       </div>
       <div class="session-actions">
         <button class="btn-sm btn-add" onclick="regenerate()">↻ Regenerate</button>
-        <!-- TODO: Phase 2 — Save outfit -->
+        <button class="btn-sm btn-add" id="saveOutfitBtn" type="button">Save outfit</button>
         <!-- TODO: Phase 2 — Wear today -->
       </div>
       <div class="session-hint">Hover a piece and tap <b>⟲</b> to replace just that item — the rest of the outfit stays.</div>
@@ -484,14 +611,18 @@ input{font-family:var(--font-body);}
   </div>
 </div>
 
+<script src="wardrobe-add-item.js"></script>
+<script src="wardrobe-edit-item.js"></script>
+<script src="saved-outfits.js"></script>
 <script>
 /* ============================================================
    WARDROBE DATA — loaded from GET /api/wardrobe/items
    ============================================================ */
 let wardrobeItems = [];
 const API_BASE_URL = 'http://127.0.0.1:8000';
+const FETCH_OPTIONS = { credentials: 'include' };
 const favorites = new Set();
-const CATEGORIES = ["All","Tops","Bottoms","Shoes","Outerwear","Accessories"];
+let filterCategories = ["All","Tops","Bottoms","Shoes","Outerwear","Accessories"];
 const COLOR_HEX = {
   camel:"#B98A54", blue:"#3E5C77", white:"#F2EFE8", tan:"#C7A176", black:"#22262A",
   brown:"#6E4E37", grey:"#9AA3A2", gray:"#9AA3A2", rust:"#A85C3F",
@@ -514,12 +645,50 @@ const MODE_DESC = {
 /* ---------- Landing → Wardrobe transition ---------- */
 let opened=false;
 
+let pipelineTraceLabels = {
+  wardrobe: "WARDROBE SERVICE",
+  memory: "MEMORY SERVICE",
+  composer: "RULE-BASED COMPOSER",
+  composer_footer: "From the rule-based composer",
+  inline_edit: "INLINE EDIT AGENT",
+};
+
 async function loadWardrobeItems(){
-  const response=await fetch(`${API_BASE_URL}/api/wardrobe/items`);
-  if(!response.ok){
-    throw new Error(`Failed to load wardrobe (${response.status})`);
+  const [itemsResponse, labelsResponse, traceResponse] = await Promise.all([
+    fetch(`${API_BASE_URL}/api/wardrobe/items`, FETCH_OPTIONS),
+    fetch(`${API_BASE_URL}/api/wardrobe/category-labels`, FETCH_OPTIONS),
+    fetch(`${API_BASE_URL}/api/pipeline/trace-labels`, FETCH_OPTIONS),
+  ]);
+  if(!itemsResponse.ok){
+    throw new Error(`Failed to load wardrobe (${itemsResponse.status})`);
   }
-  wardrobeItems=await response.json();
+  wardrobeItems=await itemsResponse.json();
+  if(labelsResponse.ok){
+    filterCategories=await labelsResponse.json();
+  }
+  if(traceResponse.ok){
+    pipelineTraceLabels=await traceResponse.json();
+    const footer=document.getElementById('composerFooter');
+    if(footer&&pipelineTraceLabels.composer_footer){
+      footer.textContent=pipelineTraceLabels.composer_footer;
+    }
+  }
+}
+
+let savedOutfitsUi=null;
+function showWardrobeView(){
+  const panel=document.getElementById('savedOutfitsPanel');
+  const main=document.getElementById('wardrobeMain');
+  const railWardrobe=document.getElementById('wardrobeRailBtn');
+  const railSaved=document.getElementById('savedOutfitsRailBtn');
+  if(panel) panel.hidden=true;
+  if(main) main.hidden=false;
+  if(railWardrobe) railWardrobe.classList.add('active');
+  if(railSaved) railSaved.classList.remove('active');
+}
+function isSavedPanelVisible(){
+  const panel=document.getElementById('savedOutfitsPanel');
+  return panel && !panel.hidden;
 }
 
 function openWardrobe(){
@@ -544,6 +713,32 @@ function openWardrobe(){
       document.getElementById('count').textContent='Could not load wardrobe';
     }
     render();
+    WardrobeAddItem.bind({
+      apiBaseUrl: API_BASE_URL,
+      getFilterCategories: () => filterCategories,
+      getWardrobeItems: () => wardrobeItems,
+      setWardrobeItems: (items) => { wardrobeItems = items; },
+      render,
+    });
+    WardrobeEditItem.bind({
+      apiBaseUrl: API_BASE_URL,
+      getFilterCategories: () => filterCategories,
+      getWardrobeItems: () => wardrobeItems,
+      setWardrobeItems: (items) => { wardrobeItems = items; },
+      render,
+      getDetailItemId: () => detailItemId,
+      closeDetail,
+      refreshDetail: (newId) => { detailItemId = newId; openDetail(newId); },
+      fetchOptions: FETCH_OPTIONS,
+    });
+    savedOutfitsUi=SavedOutfits.bind({
+      apiBaseUrl: API_BASE_URL,
+      getCurrentOutfit: () => currentOutfitResult?.outfit || null,
+      showPanel: () => {},
+      hidePanel: () => {},
+      isSavedPanelVisible,
+    });
+    showWardrobeView();
   },t2);
 }
 document.getElementById('wardrobe').addEventListener('keydown',e=>{
@@ -552,13 +747,13 @@ document.getElementById('wardrobe').addEventListener('keydown',e=>{
 
 /* ---------- Wardrobe rendering ---------- */
 function buildFilters(){
-  document.getElementById('pills').innerHTML=CATEGORIES.map(c=>
+  document.getElementById('pills').innerHTML=filterCategories.map(c=>
     `<button class="pill ${c===activeCategory?'active':''}" onclick="setCategory('${c}')">${c}</button>`).join('');
   const colors=[...new Set(wardrobeItems.map(i=>i.color))];
   document.getElementById('swatches').innerHTML=colors.map(c=>
     `<button class="swatch ${c===activeColor?'sel':''}" style="background:${COLOR_HEX[c]||'#ccc'}" title="${c}" aria-label="Filter by ${c}" onclick="setColor('${c}')"></button>`).join('');
 }
-function setCategory(c){activeCategory=c;render();}
+function setCategory(c){activeCategory=c;activeColor=null;render();}
 function setColor(c){activeColor=(activeColor===c)?null:c;render();}
 function toggleFavFilter(){favOnly=!favOnly;document.getElementById('favToggle').classList.toggle('active',favOnly);render();}
 function toggleFav(ev,id){ev.stopPropagation();favorites.has(id)?favorites.delete(id):favorites.add(id);render();}
@@ -668,6 +863,7 @@ let currentOutfitResult=null;
 async function requestOutfit(prompt){
   const response=await fetch(`${API_BASE_URL}/api/outfits`,{
     method:'POST',
+    credentials:'include',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({prompt, mode: currentMode}),
   });
@@ -705,6 +901,7 @@ function buildWhyText(data){
 async function requestInlineEdit(payload){
   const response=await fetch(`${API_BASE_URL}/api/outfits/inline-edit`,{
     method:'POST',
+    credentials:'include',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify(payload),
   });
@@ -758,23 +955,26 @@ function openSessionShell(text,skipThinking){
 
 function runThinking(text){
   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const wardrobeStep=["Reviewing your wardrobe — "+wardrobeItems.length+" pieces","wardrobe agent"];
-  const memoryStep=["Recalling your saved style preferences","memory agent"];
+  const wardrobeLabel=pipelineTraceLabels.wardrobe||"WARDROBE SERVICE";
+  const memoryLabel=pipelineTraceLabels.memory||"MEMORY SERVICE";
+  const composerLabel=pipelineTraceLabels.composer||"RULE-BASED COMPOSER";
+  const wardrobeStep=["Reviewing your wardrobe — "+wardrobeItems.length+" pieces",wardrobeLabel];
+  const memoryStep=["Recalling your saved style preferences",memoryLabel];
   const stepsByMode={
     my_wardrobe:[
       wardrobeStep,
       memoryStep,
-      ["Composing only from what you own","stylist agent"],
+      ["Composing only from what you own",composerLabel],
     ],
     wardrobe_plus_ai:[
       wardrobeStep,
       memoryStep,
-      ["Filling wardrobe gaps when needed","stylist agent"],
+      ["Filling wardrobe gaps when needed",composerLabel],
     ],
     ai_inspiration:[
-      ["Creating an independent style direction","stylist agent"],
+      ["Creating an independent style direction",composerLabel],
       memoryStep,
-      ["Checking which inspired pieces you already own","wardrobe agent"],
+      ["Checking which inspired pieces you already own",wardrobeLabel],
     ],
   };
   const steps=stepsByMode[currentMode]||stepsByMode.my_wardrobe;

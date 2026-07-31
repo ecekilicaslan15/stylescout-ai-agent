@@ -14,7 +14,7 @@ class TestWardrobeService:
         repository = MagicMock()
         repository.get_all.return_value = [{"name": "Service Shirt", "category": "tops"}]
 
-        items = WardrobeService(repository=repository).list_items()
+        items = WardrobeService(repository=repository, auto_seed=False).list_items()
 
         repository.get_all.assert_called_once_with()
         assert items[0]["name"] == "Service Shirt"
@@ -23,7 +23,7 @@ class TestWardrobeService:
         repository = MagicMock()
         repository.get_by_category.return_value = {"tops": [{"name": "Service Shirt"}]}
 
-        grouped = WardrobeService(repository=repository).get_items_by_category()
+        grouped = WardrobeService(repository=repository, auto_seed=False).get_items_by_category()
 
         repository.get_by_category.assert_called_once_with()
         assert grouped["tops"][0]["name"] == "Service Shirt"
@@ -33,9 +33,9 @@ class TestWardrobeService:
         repository.add_item.return_value = True
         payload = {"name": "Service Shirt", "color": "white", "style": "casual"}
 
-        added = WardrobeService(repository=repository).add_item("tops", payload)
+        added = WardrobeService(repository=repository, auto_seed=False).add_item("tops", payload)
 
-        repository.add_item.assert_called_once_with("tops", payload)
+        repository.add_item.assert_called_once_with("tops", payload, allow_duplicate=False)
         assert added is True
 
     def test_defaults_to_factory_repository(self):

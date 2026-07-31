@@ -65,7 +65,7 @@ class FashionOrchestrator:
         return ["stylist_agent"]
 
     def run(self, user_input: str, mode: StylingMode = DEFAULT_STYLING_MODE) -> dict:
-        plan = plan_user_request(user_input)
+        plan = plan_user_request(user_input, mode=mode)
         plan_dict = plan_to_dict(plan)
         memory = load_memory()
         wardrobe = self._wardrobe_repository.get_all()
@@ -163,8 +163,15 @@ _orchestrator = FashionOrchestrator()
 def run_fashion_agent(
     user_input: str,
     mode: StylingMode = DEFAULT_STYLING_MODE,
+    *,
+    wardrobe_repository: WardrobeRepository | None = None,
 ) -> dict:
     """Public entry point used by the Streamlit app."""
+    if wardrobe_repository is not None:
+        return FashionOrchestrator(wardrobe_repository=wardrobe_repository).run(
+            user_input,
+            mode=mode,
+        )
     return _orchestrator.run(user_input, mode=mode)
 
 
@@ -207,6 +214,11 @@ def run_inline_edit(
     current_outfit: dict,
     target_item: dict,
     instruction: str,
+    *,
+    wardrobe_repository: WardrobeRepository | None = None,
 ) -> dict:
     """Public entry point for single-item inline edits from the UI."""
+    if wardrobe_repository is not None:
+        orchestrator = FashionOrchestrator(wardrobe_repository=wardrobe_repository)
+        return orchestrator.run_inline_edit(current_outfit, target_item, instruction)
     return _orchestrator.run_inline_edit(current_outfit, target_item, instruction)

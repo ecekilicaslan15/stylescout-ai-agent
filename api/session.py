@@ -1,0 +1,48 @@
+"""Anonymous browser session helpers (session_id doubles as user_id)."""
+
+from __future__ import annotations
+
+import re
+import uuid
+
+from fastapi import Request, Response
+
+SESSION_COOKIE_NAME = "stylescout_session"
+LEGACY_USER_ID = "default"
+SESSION_ID_PATTERN = re.compile(r"^sess_[0-9a-f]{32}$")
+
+
+def generate_session_id() -> str:
+    """Return a new anonymous session identifier used as user_id."""
+    return f"sess_{uuid.uuid4().hex}"
+
+
+def is_valid_session_id(session_id: str) -> bool:
+    """Accept anonymous sessions and the untouched legacy default user."""
+    if session_id == LEGACY_USER_ID:
+        return True
+    return bool(SESSION_ID_PATTERN.match(session_id))
+
+
+def resolve_session_id(raw_value: str | None) -> str:
+    """Normalize a cookie value or return a freshly generated session id."""
+    if raw_value and is_valid_session_id(raw_value):
+        return raw_value
+    return generate_session_id()
+
+
+def get_session_user_id(request: Request, response: Response) -> str:
+    """FastAPI dependency: read cookie or issue stylescout_session on first visit."""
+    cookie_value = request.cookies.get(SESSION_COOKIE_NAME)
+    if cookie_value and is_valid_session_id(cookie_value):
+        return cookie_value
+
+    session_id = resolve_session_id(cookie_value)
+    response.set_cookie(
+        key=SESSION_COOKIE_NAME,
+        value=session_id,
+        httponly=True,
+        samesite="lax",
+        max_age=60 * 60 * 24 * 365,
+    )
+    return session_id

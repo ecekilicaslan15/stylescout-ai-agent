@@ -10,7 +10,7 @@ from models.agent_context import AgentContext
 from models.agent_response import AgentResponse
 from models.plan import Plan, plan_to_dict
 from orchestrator.fashion_orchestrator import FashionOrchestrator
-from wardrobe.json_wardrobe_repository import JsonWardrobeRepository
+from wardrobe.json_wardrobe_repository import DEFAULT_JSON_PATH, JsonWardrobeRepository
 
 from tests.conftest import CONTEXT_BOTTOM, CONTEXT_SHOES, CONTEXT_TOP
 
@@ -66,6 +66,32 @@ class TestJsonWardrobeRepository:
         assert added is True
         saved = json.loads((tmp_path / "wardrobe.json").read_text(encoding="utf-8"))
         assert saved["shoes"][0]["name"] == "Repo Sneakers"
+
+    def test_refuses_to_write_production_seed_during_pytest(self, monkeypatch):
+        monkeypatch.delenv("WARDROBE_JSON_PATH", raising=False)
+        repository = JsonWardrobeRepository(DEFAULT_JSON_PATH)
+
+        with pytest.raises(RuntimeError, match="production seed wardrobe.json"):
+            repository.add_item(
+                "tops",
+                {"name": "Must Not Persist", "color": "white", "style": "casual"},
+            )
+
+    def test_update_item_refuses_production_seed_during_pytest(self, monkeypatch):
+        monkeypatch.delenv("WARDROBE_JSON_PATH", raising=False)
+        repository = JsonWardrobeRepository(DEFAULT_JSON_PATH)
+        item_id = repository.get_all()[0]["id"]
+
+        with pytest.raises(RuntimeError, match="production seed wardrobe.json"):
+            repository.update_item(item_id, {"color": "hotpink"})
+
+    def test_delete_item_refuses_production_seed_during_pytest(self, monkeypatch):
+        monkeypatch.delenv("WARDROBE_JSON_PATH", raising=False)
+        repository = JsonWardrobeRepository(DEFAULT_JSON_PATH)
+        item_id = repository.get_all()[0]["id"]
+
+        with pytest.raises(RuntimeError, match="production seed wardrobe.json"):
+            repository.delete_item(item_id)
 
 
 class TestAgentsUseRepository:
