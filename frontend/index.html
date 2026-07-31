@@ -309,6 +309,15 @@ input{font-family:var(--font-body);}
 .bg-item:hover .swap-btn{opacity:1;}
 .bg-item .swap-btn:hover{transform:rotate(180deg);border-color:var(--turquoise);}
 .bg-item.item-suggested{outline:2px dashed var(--turquoise);outline-offset:3px;}
+.swap-inline-form{position:absolute;inset:10px;z-index:12;display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:12px;background:rgba(251,253,252,0.96);border:1px solid var(--border);box-shadow:var(--shadow-lift);}
+.swap-inline-label{font-size:10px;font-family:var(--font-mono);letter-spacing:0.06em;text-transform:uppercase;color:var(--text-secondary);}
+.swap-inline-input{border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;background:var(--surface);color:var(--text-primary);width:100%;}
+.swap-inline-input:focus{outline:none;border-color:var(--turquoise);box-shadow:0 0 0 3px rgba(34,199,199,0.12);}
+.swap-inline-actions{display:flex;justify-content:flex-end;gap:6px;}
+.swap-inline-cancel,.swap-inline-submit{font-size:12px;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);}
+.swap-inline-submit{background:var(--text-primary);color:var(--surface);border-color:var(--text-primary);}
+.swap-inline-error{font-size:11px;line-height:1.4;color:var(--danger);margin:0;}
+.bg-item.swapping .swap-inline-form{opacity:0.6;pointer-events:none;}
 .provenance-badge{position:absolute;top:8px;left:8px;font-family:var(--font-mono);font-size:8.5px;letter-spacing:0.06em;text-transform:uppercase;padding:3px 8px;border-radius:5px;border:1px solid;}
 .provenance-owned{background:var(--turquoise-soft);color:var(--turquoise-dark);border-color:var(--turquoise);}
 .provenance-suggested{background:var(--surface);color:var(--text-secondary);border-color:var(--border);}
@@ -613,6 +622,7 @@ input{font-family:var(--font-body);}
 
 <script src="wardrobe-add-item.js"></script>
 <script src="wardrobe-edit-item.js"></script>
+<script src="inline-edit-swap.js"></script>
 <script src="saved-outfits.js"></script>
 <script>
 /* ============================================================
@@ -738,6 +748,28 @@ function openWardrobe(){
       hidePanel: () => {},
       isSavedPanelVisible,
     });
+    inlineEditSwapUi=InlineEditSwap.bind({
+      apiBaseUrl: API_BASE_URL,
+      getCurrentOutfit: () => currentOutfitResult?.outfit || null,
+      getSessionOutfit: () => sessionOutfit,
+      setSessionOutfitItem: (slot, item) => {
+        sessionOutfit[slot] = { ...item, ai: false };
+      },
+      updateOutfitFromResponse: (outfit, slot, originalItem, updatedItem) => {
+        currentOutfitResult = { ...currentOutfitResult, outfit };
+        if (updatedItem) {
+          sessionOutfit[slot] = { ...updatedItem, ai: false };
+        }
+        if (!currentOutfitResult?.outfit?.items) return;
+        currentOutfitResult.outfit.items = outfit.items.map((item) => ({ ...item, ai: false }));
+      },
+      renderBoard,
+      setWhyText: (text) => {
+        const whyEl = document.getElementById('whyText');
+        if (whyEl) whyEl.textContent = text;
+      },
+      fetchOptions: FETCH_OPTIONS,
+    });
     showWardrobeView();
   },t2);
 }
@@ -859,6 +891,7 @@ const SLOT_POS=[
 let sessionOutfit={}; /* slot -> item */
 let sessionActive=false;
 let currentOutfitResult=null;
+let inlineEditSwapUi=null;
 
 async function requestOutfit(prompt){
   const response=await fetch(`${API_BASE_URL}/api/outfits`,{
@@ -1030,7 +1063,7 @@ function renderBoard(){
       <div class="bg-item ${suggested?'item-suggested':''}" data-slot="${slot}"
            style="${pos}background-image:url('${it.image_url}')">
         ${provenanceBadgeHtml(it)}
-        <button class="swap-btn" aria-label="Replace ${slot}" onclick="event.stopPropagation();swapSlot('${slot}')">⟲</button>
+        <button class="swap-btn" aria-label="Replace ${slot}" onclick="event.stopPropagation();openSwapInput('${slot}')">⟲</button>
         <span class="slot-tag">${it.name||slot}</span>
       </div>`;
   }).join('');
@@ -1061,47 +1094,17 @@ function revealBoard(data){
   document.getElementById('boardWrap').classList.add('show');
 }
 
-/* Inline Edit Agent: replace one slot, everything else stays still */
-async function swapSlot(slot){
-  const el=document.querySelector(`.bg-item[data-slot="${slot}"]`);
-  const current=sessionOutfit[slot];
-  if(!current) return;
-
-  if(!currentOutfitResult?.outfit?.items?.length){
-    console.warn('No active outfit available for inline edit.');
+/* Inline Edit Agent: replace one slot via free-text instruction */
+function openSwapInput(slot){
+  if(!inlineEditSwapUi){
+    console.warn('Inline edit UI is not ready yet.');
     return;
   }
+  inlineEditSwapUi.openSwapInput(slot);
+}
 
-  const instruction=defaultSwapInstruction(current);
-  if(el) el.classList.add('swapping');
-
-  try{
-    const data=await requestInlineEdit({
-      current_outfit:currentOutfitResult.outfit,
-      target_item:current,
-      instruction,
-    });
-
-    if(data.updated_item){
-      updateOutfitItemInState(slot,data.updated_item,current);
-    }
-    if(data.message){
-      document.getElementById('whyText').textContent=data.message;
-    }
-
-    renderBoard();
-    const fresh=document.querySelector(`.bg-item[data-slot="${slot}"]`);
-    if(fresh){
-      fresh.style.animation='none';
-      fresh.classList.add('swapping');
-      requestAnimationFrame(()=>requestAnimationFrame(()=>fresh.classList.remove('swapping')));
-    }
-    document.querySelectorAll('.bg-item').forEach(b=>{if(b!==fresh)b.style.animation='none';});
-  }catch(error){
-    console.error(error);
-    if(el) el.classList.remove('swapping');
-    document.getElementById('whyText').textContent=error.message;
-  }
+function swapSlot(slot){
+  openSwapInput(slot);
 }
 
 function regenerate(){

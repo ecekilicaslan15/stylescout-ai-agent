@@ -409,7 +409,13 @@ def to_agent_outfit(outfit: dict) -> dict:
     }
 
 
-def serialize_inline_edit_result(result: dict, service: WardrobeService) -> dict:
+def serialize_inline_edit_result(
+    result: dict,
+    service: WardrobeService,
+    *,
+    current_outfit: dict | None = None,
+    target_item: dict | None = None,
+) -> dict:
     """Convert run_inline_edit output into a JSON-safe API response."""
     wardrobe_items = service.list_items()
     wardrobe_by_category = _index_wardrobe_by_category(wardrobe_items)
@@ -417,22 +423,78 @@ def serialize_inline_edit_result(result: dict, service: WardrobeService) -> dict
     updated_item = result.get("updated_item")
     original_item = result.get("original_item")
 
-    return {
+    serialized_updated = (
+        serialize_outfit_item(updated_item, wardrobe_by_category)
+        if updated_item
+        else None
+    )
+    serialized_original = (
+        serialize_outfit_item(original_item, wardrobe_by_category)
+        if original_item
+        else None
+    )
+
+    payload = {
         "success": result.get("success", False),
         "message": result.get("message"),
-        "updated_item": (
-            serialize_outfit_item(updated_item, wardrobe_by_category)
-            if updated_item
-            else None
-        ),
-        "original_item": (
-            serialize_outfit_item(original_item, wardrobe_by_category)
-            if original_item
-            else None
-        ),
+        "updated_item": serialized_updated,
+        "original_item": serialized_original,
         "instruction": result.get("instruction"),
         "error": result.get("error"),
     }
+
+    if (
+        result.get("success")
+        and current_outfit
+        and target_item
+        and serialized_updated
+    ):
+        payload["outfit"] = _merge_inline_edit_outfit(
+            current_outfit,
+            target_item,
+            serialized_updated,
+            wardrobe_by_category,
+        )
+
+    return payload
+
+
+def _merge_inline_edit_outfit(
+    current_outfit: dict,
+    target_item: dict,
+    updated_item: dict,
+    wardrobe_by_category: dict[str, list[dict]],
+) -> dict:
+    """Return the full outfit with only the target slot replaced."""
+    target_id = target_item.get("id")
+    target_name = (target_item.get("name") or "").strip().lower()
+    target_category = target_item.get("category") or target_item.get("source_category")
+
+    merged_items: list[dict] = []
+    for item in current_outfit.get("items") or []:
+        item_id = item.get("id")
+        item_name = (item.get("name") or "").strip().lower()
+        item_category = item.get("category") or item.get("source_category")
+        is_target = False
+        if target_id and item_id == target_id:
+            is_target = True
+        elif item_name == target_name and item_category == target_category:
+            is_target = True
+
+        if is_target:
+            merged_items.append(dict(updated_item))
+        else:
+            merged_items.append(serialize_outfit_item(item, wardrobe_by_category))
+
+    return {
+        **{key: value for key, value in current_outfit.items() if key != "items"},
+        "items": merged_items,
+    }
+
+
+INLINE_EDIT_CLIENT_ERRORS = frozenset(
+    {"empty_instruction", "unrecognized_instruction", "no_replacement"}
+)
 
 
 def serialize_outfit_item(item: dict, wardrobe_by_category: dict[str, list[dict]]) -> dict:
@@ -721,7 +783,22 @@ def inline_edit_outfit(
         instruction=instruction,
         wardrobe_repository=wardrobe_repository,
     )
-    return serialize_inline_edit_result(result, service)
+
+    if not result.get("success"):
+        error_code = result.get("error") or "agent_error"
+        message = result.get("message") or "Inline edit failed."
+        if error_code in INLINE_EDIT_CLIENT_ERRORS:
+            raise HTTPException(status_code=422, detail=message)
+        if error_code == "missing_context":
+            raise HTTPException(status_code=400, detail=message)
+        raise HTTPException(status_code=500, detail=message)
+
+    return serialize_inline_edit_result(
+        result,
+        service,
+        current_outfit=request.current_outfit,
+        target_item=request.target_item,
+    )
 
 
 app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
