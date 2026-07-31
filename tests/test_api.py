@@ -14,7 +14,7 @@ from api.main import (
 )
 from api.session import LEGACY_USER_ID
 from models.plan import Plan
-from models.styling_mode import StylingMode
+from models.styling_mode import DEFAULT_STYLING_MODE, StylingMode
 from wardrobe.json_wardrobe_repository import JsonWardrobeRepository
 from wardrobe.wardrobe_service import WardrobeService
 
@@ -137,7 +137,7 @@ class TestOutfitsEndpoint:
         assert payload["plan"]["intent"] == "outfit_request"
         mock_run_fashion_agent.assert_called_once_with(
             "What should I wear today?",
-            mode=StylingMode.WARDROBE_PLUS_AI,
+            mode=DEFAULT_STYLING_MODE,
             wardrobe_repository=ANY,
         )
 
@@ -157,7 +157,7 @@ class TestOutfitModePlumbing:
     @patch("api.main.run_fashion_agent")
     @patch("api.main.update_wardrobe_from_input", return_value=None)
     @patch("api.main.update_memory_from_input")
-    def test_missing_mode_defaults_to_wardrobe_plus_ai(
+    def test_missing_mode_defaults_to_default_styling_mode(
         self,
         mock_update_memory,
         mock_update_wardrobe,
@@ -176,7 +176,7 @@ class TestOutfitModePlumbing:
         assert response.status_code == 200
         mock_run_fashion_agent.assert_called_once_with(
             "casual outfit",
-            mode=StylingMode.WARDROBE_PLUS_AI,
+            mode=DEFAULT_STYLING_MODE,
             wardrobe_repository=ANY,
         )
 
