@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 from models.plan import Plan
+from models.styling_mode import StylingMode
 
 
 class Planner(ABC):
@@ -11,5 +12,5 @@ class Planner(ABC):
     """
 
     @abstractmethod
-    def plan(self, user_input: str) -> Plan:
+    def plan(self, user_input: str, mode: StylingMode | None = None) -> Plan:
         pass

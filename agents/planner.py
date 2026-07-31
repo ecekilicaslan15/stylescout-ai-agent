@@ -7,6 +7,7 @@ which planner implementation to use and exposes a stable function
 """
 
 from models.plan import Plan
+from models.styling_mode import StylingMode
 from agents.planners.llm_planner import LLMPlanner
 from agents.planners.rule_based_planner import RuleBasedPlanner
 
@@ -21,7 +22,7 @@ else:
     planner = RuleBasedPlanner()
 
 
-def plan_user_request(user_input: str) -> Plan:
+def plan_user_request(user_input: str, mode: StylingMode | None = None) -> Plan:
     """
     Public planner entry point used by the orchestrator.
 
@@ -29,4 +30,5 @@ def plan_user_request(user_input: str) -> Plan:
     and UI depend on this function—not on RuleBasedPlanner or LLMPlanner
     directly—so switching planners requires changing only USE_LLM here.
     """
-    return planner.plan(user_input)
+    # TODO: mode policy will move into planner in a dedicated follow-up ticket (see DECISIONS.md correction row)
+    return planner.plan(user_input, mode=mode)

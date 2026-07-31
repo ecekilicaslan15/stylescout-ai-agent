@@ -53,6 +53,8 @@ class TestWardrobeDatabase:
             "style",
             "event",
             "image_url",
+            "source",
+            "owned",
             "created_at",
             "updated_at",
         }

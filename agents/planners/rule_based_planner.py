@@ -1,4 +1,5 @@
 from models.plan import Plan
+from models.styling_mode import StylingMode
 from agents.planners.base import Planner
 from agents.detectors.color_detector import detect_colors
 from agents.detectors.date_detector import detect_date
@@ -23,7 +24,8 @@ class RuleBasedPlanner(Planner):
     and requires no external API calls.
     """
 
-    def plan(self, user_input: str) -> Plan:
+    def plan(self, user_input: str, mode: StylingMode | None = None) -> Plan:
+        # TODO: mode policy will move into planner in a dedicated follow-up ticket (see DECISIONS.md correction row)
         text = user_input.lower()
         plan = Plan()
 
