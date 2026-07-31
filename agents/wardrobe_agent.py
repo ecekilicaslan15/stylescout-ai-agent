@@ -1,5 +1,6 @@
 from agents.base_agent import BaseAgent
 from agents.detectors.color_detector import detect_colors
+from agents.inline_edit_config import InlineEditCriteria
 from context.runtime_helpers import resolve_memory, resolve_wardrobe
 from models.agent_context import AgentContext
 from models.agent_response import AgentResponse
@@ -23,6 +24,11 @@ CATEGORY_NORMALIZATION = {
     "outerwear": "outerwear",
     "accessories": "accessory",
     "accessory": "accessory",
+}
+
+WEATHER_STYLE_BONUS = {
+    "warm": {"casual": 3, "comfortable": 3, "sporty": 2, "elegant": -1, "formal": -2},
+    "cold": {"elegant": 2, "classic": 2, "formal": 2, "casual": 0, "sporty": -1},
 }
 
 STYLE_SCORES = {
@@ -80,6 +86,7 @@ class WardrobeAgent(BaseAgent):
         instruction: str = "",
         wardrobe: list | dict | None = None,
         wardrobe_repository: WardrobeRepository | None = None,
+        edit_criteria: InlineEditCriteria | None = None,
     ) -> AgentResponse:
         """Find the best wardrobe replacement for a single outfit item."""
         return self.run(
@@ -93,6 +100,7 @@ class WardrobeAgent(BaseAgent):
                 "instruction": instruction,
                 "wardrobe": wardrobe,
                 "wardrobe_repository": wardrobe_repository,
+                "edit_criteria": edit_criteria,
             },
         )
 
@@ -110,6 +118,7 @@ class WardrobeAgent(BaseAgent):
         target_style = context.get("target_style")
         memory = resolve_memory(context.get("memory"))
         instruction = context.get("instruction") or user_input
+        edit_criteria = context.get("edit_criteria")
         repository = context.get("wardrobe_repository") or self._wardrobe_repository
         wardrobe = resolve_wardrobe(context.get("wardrobe"), repository)
 
@@ -153,7 +162,11 @@ class WardrobeAgent(BaseAgent):
 
         disliked_items = memory.get("disliked_items", [])
         favorite_colors = memory.get("favorite_colors", [])
-        instruction_colors = detect_colors(instruction.lower())
+        if edit_criteria and edit_criteria.instruction_colors:
+            instruction_colors = list(edit_criteria.instruction_colors)
+        else:
+            instruction_colors = detect_colors(instruction.lower())
+        weather_hint = edit_criteria.weather_hint if edit_criteria else None
 
         best_item, match_type, explanation = self._find_best_replacement(
             category_items=category_items,
@@ -162,6 +175,7 @@ class WardrobeAgent(BaseAgent):
             disliked_items=disliked_items,
             favorite_colors=favorite_colors,
             instruction_colors=instruction_colors,
+            weather_hint=weather_hint,
         )
 
         if best_item is None:
@@ -220,9 +234,13 @@ class WardrobeAgent(BaseAgent):
         target_style: str,
         favorite_colors: list[str],
         instruction_colors: list[str],
+        weather_hint: str | None = None,
     ) -> int:
         item_style = item.get("style", "casual")
         style_score = STYLE_SCORES.get(target_style, {}).get(item_style, 3)
+
+        if weather_hint:
+            style_score += WEATHER_STYLE_BONUS.get(weather_hint, {}).get(item_style, 0)
 
         color_bonus = 0
         item_color = _normalize_color(item.get("color"))
@@ -245,6 +263,7 @@ class WardrobeAgent(BaseAgent):
         disliked_items: list[str],
         favorite_colors: list[str],
         instruction_colors: list[str],
+        weather_hint: str | None = None,
     ) -> tuple[dict | None, str | None, str]:
         target_name = target_item.get("name", "").strip().lower()
         candidates: list[tuple[int, dict]] = []
@@ -262,6 +281,7 @@ class WardrobeAgent(BaseAgent):
                 target_style,
                 favorite_colors,
                 instruction_colors,
+                weather_hint=weather_hint,
             )
             candidates.append((score, item))
 

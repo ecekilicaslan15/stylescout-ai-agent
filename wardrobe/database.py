@@ -28,6 +28,8 @@ CREATE TABLE IF NOT EXISTS wardrobe_items (
     style TEXT NOT NULL DEFAULT 'casual',
     event TEXT,
     image_url TEXT,
+    source TEXT NOT NULL DEFAULT 'wardrobe',
+    owned INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -43,9 +45,49 @@ CREATE INDEX IF NOT EXISTS idx_wardrobe_items_user_color
 """
 
 
+def _ensure_wardrobe_item_columns(connection: sqlite3.Connection) -> None:
+    """Add columns introduced after the initial schema (idempotent)."""
+    columns = {
+        row["name"]
+        for row in connection.execute("PRAGMA table_info(wardrobe_items)").fetchall()
+    }
+    if "source" not in columns:
+        connection.execute(
+            "ALTER TABLE wardrobe_items ADD COLUMN source TEXT NOT NULL DEFAULT 'wardrobe'"
+        )
+    if "owned" not in columns:
+        connection.execute(
+            "ALTER TABLE wardrobe_items ADD COLUMN owned INTEGER NOT NULL DEFAULT 1"
+        )
+
+
+SAVED_OUTFITS_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS saved_outfits (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    outfit_json TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+"""
+
+SAVED_OUTFITS_INDEX_SQL = """
+CREATE INDEX IF NOT EXISTS idx_saved_outfits_user_id
+    ON saved_outfits (user_id);
+CREATE INDEX IF NOT EXISTS idx_saved_outfits_user_created
+    ON saved_outfits (user_id, created_at DESC);
+"""
+
+
+def init_saved_outfits_db(connection: sqlite3.Connection) -> None:
+    """Create saved outfit tables and indexes if they do not exist."""
+    connection.executescript(SAVED_OUTFITS_TABLE_SQL + SAVED_OUTFITS_INDEX_SQL)
+
+
 def init_wardrobe_db(connection: sqlite3.Connection) -> None:
     """Create wardrobe tables and indexes if they do not exist."""
     connection.executescript(WARDROBE_ITEMS_TABLE_SQL + WARDROBE_ITEMS_INDEX_SQL)
+    _ensure_wardrobe_item_columns(connection)
+    init_saved_outfits_db(connection)
 
 
 @contextmanager

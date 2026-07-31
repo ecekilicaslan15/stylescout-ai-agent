@@ -10,7 +10,7 @@ from models.agent_context import AgentContext
 from models.agent_response import AgentResponse
 from models.plan import Plan, plan_to_dict
 from orchestrator.fashion_orchestrator import FashionOrchestrator
-from wardrobe.json_wardrobe_repository import JsonWardrobeRepository
+from wardrobe.json_wardrobe_repository import DEFAULT_JSON_PATH, JsonWardrobeRepository
 
 from tests.conftest import CONTEXT_BOTTOM, CONTEXT_SHOES, CONTEXT_TOP
 
@@ -66,6 +66,111 @@ class TestJsonWardrobeRepository:
         assert added is True
         saved = json.loads((tmp_path / "wardrobe.json").read_text(encoding="utf-8"))
         assert saved["shoes"][0]["name"] == "Repo Sneakers"
+
+    def test_refuses_to_write_production_seed_during_pytest(self, monkeypatch):
+        monkeypatch.delenv("WARDROBE_JSON_PATH", raising=False)
+        repository = JsonWardrobeRepository(DEFAULT_JSON_PATH)
+
+        with pytest.raises(RuntimeError, match="production seed wardrobe.json"):
+            repository.add_item(
+                "tops",
+                {"name": "Must Not Persist", "color": "white", "style": "casual"},
+            )
+
+    def test_update_item_refuses_production_seed_during_pytest(self, monkeypatch):
+        monkeypatch.delenv("WARDROBE_JSON_PATH", raising=False)
+        repository = JsonWardrobeRepository(DEFAULT_JSON_PATH)
+        item_id = repository.get_all()[0]["id"]
+
+        with pytest.raises(RuntimeError, match="production seed wardrobe.json"):
+            repository.update_item(item_id, {"color": "hotpink"})
+
+    def test_duplicate_name_allowed_across_different_users(self, tmp_path):
+        wardrobe_path = tmp_path / "wardrobe.json"
+        wardrobe_path.write_text(
+            json.dumps(
+                {
+                    "tops": [
+                        {
+                            "name": "Shared Shirt Name",
+                            "category": "tops",
+                            "color": "white",
+                            "style": "casual",
+                            "id": "itm_user_a",
+                            "user_id": "user_a",
+                        },
+                        {
+                            "name": "Shared Shirt Name",
+                            "category": "tops",
+                            "color": "blue",
+                            "style": "casual",
+                            "id": "itm_user_b",
+                            "user_id": "user_b",
+                        },
+                    ],
+                    "bottoms": [],
+                    "shoes": [],
+                    "outerwear": [],
+                    "accessories": [],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        user_a_repo = JsonWardrobeRepository(wardrobe_path, user_id="user_a")
+        updated = user_a_repo.update_item("itm_user_a", {"color": "hotpink"})
+
+        assert updated is True
+        saved = json.loads(wardrobe_path.read_text(encoding="utf-8"))
+        user_a_item = next(item for item in saved["tops"] if item["id"] == "itm_user_a")
+        user_b_item = next(item for item in saved["tops"] if item["id"] == "itm_user_b")
+        assert user_a_item["color"] == "hotpink"
+        assert user_b_item["color"] == "blue"
+
+    def test_duplicate_name_blocked_within_same_user(self, tmp_path):
+        wardrobe_path = tmp_path / "wardrobe.json"
+        wardrobe_path.write_text(
+            json.dumps(
+                {
+                    "tops": [
+                        {
+                            "name": "White Shirt",
+                            "category": "tops",
+                            "color": "white",
+                            "style": "casual",
+                            "id": "itm_one",
+                            "user_id": "user_a",
+                        },
+                        {
+                            "name": "Blue Shirt",
+                            "category": "tops",
+                            "color": "blue",
+                            "style": "casual",
+                            "id": "itm_two",
+                            "user_id": "user_a",
+                        },
+                    ],
+                    "bottoms": [],
+                    "shoes": [],
+                    "outerwear": [],
+                    "accessories": [],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        repository = JsonWardrobeRepository(wardrobe_path, user_id="user_a")
+        blocked = repository.update_item("itm_two", {"name": "White Shirt"})
+
+        assert blocked is False
+
+    def test_delete_item_refuses_production_seed_during_pytest(self, monkeypatch):
+        monkeypatch.delenv("WARDROBE_JSON_PATH", raising=False)
+        repository = JsonWardrobeRepository(DEFAULT_JSON_PATH)
+        item_id = repository.get_all()[0]["id"]
+
+        with pytest.raises(RuntimeError, match="production seed wardrobe.json"):
+            repository.delete_item(item_id)
 
 
 class TestAgentsUseRepository:

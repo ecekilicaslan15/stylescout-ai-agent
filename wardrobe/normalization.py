@@ -1,6 +1,6 @@
 """Shared wardrobe field normalization used by repository implementations."""
 
-from wardrobe.constants import CATEGORIES
+from wardrobe.constants import CATEGORY_ALIASES, DISPLAY_LABELS
 
 DEFAULT_COLOR = "neutral"
 
@@ -20,10 +20,24 @@ def normalize_style(style: str) -> str:
     return style.strip().lower() or "casual"
 
 
+def normalize_stored_category(category: str) -> str:
+    """Map any accepted category alias to the canonical storage key."""
+    key = category.strip().lower()
+    canonical = CATEGORY_ALIASES.get(key)
+    if canonical is None:
+        raise ValueError(f"Unknown wardrobe category: {category}")
+    return canonical
+
+
+def to_display_category(stored_category: str) -> str:
+    """Convert a canonical storage key to the wardrobe grid display label."""
+    canonical = normalize_stored_category(stored_category)
+    return DISPLAY_LABELS[canonical]
+
+
 def validate_category(category: str) -> None:
     """Raise when a wardrobe category is not supported."""
-    if category not in CATEGORIES:
-        raise ValueError(f"Unknown wardrobe category: {category}")
+    normalize_stored_category(category)
 
 
 def normalize_stored_color(color: str) -> str:

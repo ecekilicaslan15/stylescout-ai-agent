@@ -50,7 +50,8 @@ class TestRepositoryFactory:
         with pytest.raises(ValueError, match="Unsupported wardrobe backend: 'postgres'"):
             create_wardrobe_repository(backend="postgres")
 
-    def test_json_default_path_is_file_relative(self):
+    def test_json_default_path_is_file_relative(self, monkeypatch):
+        monkeypatch.delenv("WARDROBE_JSON_PATH", raising=False)
         repository = JsonWardrobeRepository()
         assert repository._path == DEFAULT_JSON_PATH
         assert repository._path.name == "wardrobe.json"
