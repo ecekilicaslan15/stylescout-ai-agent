@@ -1,7 +1,10 @@
 """Shared metadata helpers for persisted wardrobe items."""
 
+import hashlib
 import uuid
 from datetime import datetime, timezone
+
+from wardrobe.normalization import clean_item_name, normalize_stored_category
 
 
 def utc_timestamp() -> str:
@@ -44,3 +47,11 @@ def read_item_id(item: dict) -> str:
     if not item_id:
         raise ValueError("Wardrobe item is missing a persisted id.")
     return str(item_id)
+
+
+def synthetic_suggested_item_id(item: dict) -> str:
+    """Stable catalogue id for suggested items without a wardrobe row (prefix sug_, not itm_)."""
+    category = normalize_stored_category(item.get("category") or "")
+    name = clean_item_name(item.get("name") or "").lower()
+    digest = hashlib.sha256(f"{category}:{name}".encode()).hexdigest()[:8]
+    return f"sug_{digest}"

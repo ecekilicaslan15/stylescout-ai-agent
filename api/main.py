@@ -27,7 +27,7 @@ from services.preference_service import load_preferences, save_preferences
 from services.saved_outfits_service import SavedOutfitsService, create_user_wardrobe_repository
 from services.shopping_service import ShoppingService
 from wardrobe.category_images import resolve_item_image_url
-from wardrobe.item_metadata import read_item_id
+from wardrobe.item_metadata import read_item_id, synthetic_suggested_item_id
 from wardrobe.constants import CATEGORIES, DISPLAY_LABELS, FILTER_LABELS
 from wardrobe.normalization import (
     clean_item_name,
@@ -524,12 +524,22 @@ def serialize_outfit_item(item: dict, wardrobe_by_category: dict[str, list[dict]
     if wardrobe_match:
         payload.update(wardrobe_match)
 
+    if not payload.get("id"):
+        if item.get("source") == "suggested" or item.get("owned") is False:
+            payload["id"] = synthetic_suggested_item_id(payload)
+        elif item.get("id"):
+            payload["id"] = item["id"]
+
     serialized = serialize_wardrobe_item(payload)
     serialized["source_category"] = item.get("category", category_key)
-    if "source" in item:
-        serialized["source"] = item["source"]
-    if "owned" in item:
-        serialized["owned"] = item["owned"]
+    if item.get("source") == "wardrobe" and item.get("owned") is True:
+        serialized["source"] = "wardrobe"
+        serialized["owned"] = True
+    else:
+        if "source" in item:
+            serialized["source"] = item["source"]
+        if "owned" in item:
+            serialized["owned"] = item["owned"]
     return serialized
 
 
@@ -783,7 +793,7 @@ def create_outfit(
     except Exception:
         wardrobe_update = None
 
-    wardrobe_repository = create_user_wardrobe_repository(service.user_id)
+    wardrobe_repository = service._repository
     result = run_fashion_agent(
         prompt,
         mode=request.mode,

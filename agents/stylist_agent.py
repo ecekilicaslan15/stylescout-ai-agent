@@ -1,6 +1,12 @@
 from pathlib import Path
 
 from context.runtime_helpers import resolve_memory, resolve_plan, resolve_wardrobe
+from wardrobe.normalization import (
+    build_wardrobe_identity_set,
+    find_matching_wardrobe_item,
+    item_matches_wardrobe_identity,
+    wardrobe_item_key,
+)
 from wardrobe.repository_factory import create_wardrobe_repository
 from wardrobe.wardrobe_manager import load_wardrobe
 from wardrobe.wardrobe_repository import WardrobeRepository
@@ -58,31 +64,18 @@ OUTFIT_TO_WARDROBE_KEY = {
 DEFAULT_ITEM_NAMES = frozenset(item["name"] for item in DEFAULT_ITEMS)
 
 
-def wardrobe_item_key(item: dict) -> tuple:
-    """Stable wardrobe identity: repository id when present, else (category, name)."""
-    item_id = item.get("id")
-    if item_id is not None:
-        return ("id", item_id)
-    category = _normalize_category(item.get("category")) or (item.get("category") or "")
-    name = (item.get("name") or "").strip().lower()
-    return ("name", category, name)
-
-
-def _build_wardrobe_identity_set(wardrobe: dict) -> set[tuple]:
-    keys: set[tuple] = set()
-    for category_items in wardrobe.values():
-        for item in category_items:
-            keys.add(wardrobe_item_key(item))
-    return keys
-
-
 def resolve_inspiration_ownership(item: dict, wardrobe: dict) -> dict:
     """Post-generation ownership resolver for ai_inspiration mode.
 
     Separated so sub-task B (full validation gate) can invoke it independently.
     """
-    if wardrobe_item_key(item) in _build_wardrobe_identity_set(wardrobe):
-        return _with_provenance(item, source="wardrobe", owned=True)
+    match = find_matching_wardrobe_item(item, wardrobe)
+    if match:
+        merged = dict(item)
+        for field in ("id", "user_id", "image_url", "created_at", "updated_at"):
+            if match.get(field) is not None:
+                merged[field] = match[field]
+        return _with_provenance(merged, source="wardrobe", owned=True)
     return _with_provenance(item, source="suggested", owned=False)
 
 
@@ -322,7 +315,7 @@ def generate_outfit(
     preferred_styles = memory.get("preferred_styles", [])
     disliked_items = memory.get("disliked_items", [])
 
-    wardrobe_identities = _build_wardrobe_identity_set(wardrobe)
+    wardrobe_identities = build_wardrobe_identity_set(wardrobe)
     selected_items: list[dict] = []
     wardrobe_count = 0
     suggested_count = 0
@@ -412,7 +405,7 @@ def generate_outfit(
                 raise RuntimeError(
                     f"my_wardrobe outfit item {item.get('name')!r} has invalid provenance"
                 )
-            if wardrobe_item_key(item) not in wardrobe_identities:
+            if not item_matches_wardrobe_identity(item, wardrobe_identities):
                 raise RuntimeError(
                     f"my_wardrobe outfit item {item.get('name')!r} is not in the wardrobe snapshot"
                 )

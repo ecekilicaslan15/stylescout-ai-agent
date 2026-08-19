@@ -7,6 +7,10 @@ from typing import Callable
 from agents.stylist_agent import MAX_HYBRID_SUGGESTED_ITEMS, resolve_inspiration_ownership
 from models.outfit import outfit_schema_errors
 from models.styling_mode import StylingMode
+from wardrobe.normalization import (
+    build_wardrobe_identity_set,
+    item_matches_wardrobe_identity,
+)
 
 # Frontend board slots (frontend/index.html SLOTS) — normalized keys.
 REQUIRED_SLOT_CATEGORIES = frozenset({"outerwear", "top", "bottom", "shoes"})
@@ -55,24 +59,6 @@ def _normalize_missing_slot_label(label: str) -> str | None:
     if normalized in REQUIRED_SLOT_CATEGORIES:
         return SLOT_DISPLAY_LABELS[normalized]
     return None
-
-
-def wardrobe_item_key(item: dict) -> tuple:
-    """Stable wardrobe identity: repository id when present, else (category, name)."""
-    item_id = item.get("id")
-    if item_id is not None:
-        return ("id", item_id)
-    category = _normalize_category(item.get("category")) or (item.get("category") or "")
-    name = (item.get("name") or "").strip().lower()
-    return ("name", category, name)
-
-
-def build_wardrobe_identity_set(wardrobe: dict) -> set[tuple]:
-    keys: set[tuple] = set()
-    for category_items in wardrobe.values():
-        for item in category_items:
-            keys.add(wardrobe_item_key(item))
-    return keys
 
 
 def _regenerate_outfit(plan, memory: dict, wardrobe: dict, mode: StylingMode) -> dict:
@@ -282,7 +268,7 @@ class OutfitValidator:
             label = item.get("name")
             if item.get("source") != "wardrobe" or item.get("owned") is not True:
                 errors.append(f"my_wardrobe outfit item {label!r} has invalid provenance")
-            elif wardrobe_item_key(item) not in wardrobe_identities:
+            elif not item_matches_wardrobe_identity(item, wardrobe_identities):
                 errors.append(
                     f"my_wardrobe outfit item {label!r} is not in the wardrobe snapshot"
                 )
@@ -333,7 +319,7 @@ class OutfitValidator:
                 errors.append(f"ai_inspiration outfit item {label!r} missing owned flag")
                 continue
 
-            in_wardrobe = wardrobe_item_key(item) in wardrobe_identities
+            in_wardrobe = item_matches_wardrobe_identity(item, wardrobe_identities)
             if in_wardrobe:
                 if source != "wardrobe" or owned is not True:
                     errors.append(
@@ -362,7 +348,7 @@ class OutfitValidator:
                 for item in items
                 if item.get("source") == "wardrobe"
                 and item.get("owned") is True
-                and wardrobe_item_key(item) in wardrobe_identities
+                and item_matches_wardrobe_identity(item, wardrobe_identities)
             ]
         elif mode == StylingMode.WARDROBE_PLUS_AI:
             wardrobe_items = [item for item in items if item.get("source") == "wardrobe"]

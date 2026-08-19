@@ -3,7 +3,8 @@
 import pytest
 
 from models.styling_mode import StylingMode
-from services.outfit_validator import OutfitValidator, wardrobe_item_key
+from services.outfit_validator import OutfitValidator
+from wardrobe.normalization import wardrobe_item_key
 
 from tests.conftest import CONTEXT_TOP
 
@@ -100,4 +101,4 @@ class TestOutfitValidator:
 
     def test_wardrobe_item_key_prefers_repository_id(self):
         item = {"id": 42, "name": "Ignored", "category": "tops"}
-        assert wardrobe_item_key(item) == ("id", 42)
+        assert wardrobe_item_key(item) == ("id", "42")
