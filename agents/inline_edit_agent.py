@@ -1,17 +1,9 @@
 from agents.base_agent import BaseAgent
-from agents.wardrobe_agent import WardrobeAgent
+from agents.inline_edit_config import InlineEditCriteria, parse_inline_edit_instruction
 from context.runtime_helpers import resolve_memory
 from models.agent_context import AgentContext
 from models.agent_response import AgentResponse
-
-
-def _detect_target_style(instruction: str) -> str | None:
-    text = instruction.lower()
-    if "elegant" in text:
-        return "elegant"
-    if "casual" in text:
-        return "casual"
-    return None
+from services.wardrobe_matching_service import WardrobeMatchingService
 
 
 def _resolve_inline_edit_fields(
@@ -44,8 +36,8 @@ class InlineEditAgent(BaseAgent):
     name = "inline_edit_agent"
     description = "Edits a single outfit item based on a short instruction."
 
-    def __init__(self, wardrobe_agent: WardrobeAgent | None = None) -> None:
-        self._wardrobe_agent = wardrobe_agent or WardrobeAgent()
+    def __init__(self, wardrobe_matching: WardrobeMatchingService | None = None) -> None:
+        self._wardrobe_matching = wardrobe_matching or WardrobeMatchingService()
 
     def can_handle(self, plan: dict) -> bool:
         return plan.get("intent") == "inline_edit"
@@ -68,7 +60,7 @@ class InlineEditAgent(BaseAgent):
                 agent_name=self.name,
                 message="Inline edit requires a current outfit and target item.",
                 data={},
-                error="Missing current_outfit or target_item in context.",
+                error="missing_context",
             )
 
         instruction = instruction.strip()
@@ -84,32 +76,34 @@ class InlineEditAgent(BaseAgent):
                     "original_item": target_item,
                     "instruction": instruction,
                 },
-                error="Empty instruction.",
+                error="empty_instruction",
             )
 
-        target_style = _detect_target_style(instruction)
-        if target_style is None:
+        criteria = parse_inline_edit_instruction(instruction)
+        if criteria is None:
             return AgentResponse(
-                success=True,
+                success=False,
                 agent_name=self.name,
                 message=(
-                    f"Kept {original_name}. No style keyword found — "
-                    "try words like 'elegant' or 'casual'."
+                    "Could not understand that edit. Try mentioning comfort, formality, "
+                    "color, weather, or words like 'elegant' or 'casual'."
                 ),
                 data={
                     "updated_item": target_item,
                     "original_item": target_item,
                     "instruction": instruction,
                 },
+                error="unrecognized_instruction",
             )
 
-        wardrobe_response = self._wardrobe_agent.find_replacement(
+        wardrobe_response = self._wardrobe_matching.find_replacement(
             target_item=target_item,
-            target_style=target_style,
+            target_style=criteria.target_style,
             memory=memory,
             instruction=instruction,
             wardrobe=fields["wardrobe"],
             wardrobe_repository=fields.get("wardrobe_repository"),
+            edit_criteria=criteria,
         )
 
         replacement = wardrobe_response.data.get("replacement_item")
@@ -118,14 +112,15 @@ class InlineEditAgent(BaseAgent):
 
         if replacement is None:
             return AgentResponse(
-                success=True,
+                success=False,
                 agent_name=self.name,
-                message=f"Kept {original_name}. {explanation}",
+                message=f"Could not replace {original_name}. {explanation}",
                 data={
                     "updated_item": target_item,
                     "original_item": target_item,
                     "instruction": instruction,
                 },
+                error="no_replacement",
             )
 
         replacement_name = replacement.get("name", "another item")
@@ -146,5 +141,6 @@ class InlineEditAgent(BaseAgent):
                 "original_item": target_item,
                 "instruction": instruction,
                 "match_type": match_type,
+                "criteria": criteria,
             },
         )

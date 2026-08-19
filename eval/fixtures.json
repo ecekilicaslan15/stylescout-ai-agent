@@ -1,0 +1,47 @@
+{
+  "fixtures": [
+    {"id": "mw_empty_casual", "mode": "my_wardrobe", "wardrobe": "empty", "prompt": "What should I wear today?"},
+    {"id": "mw_empty_dinner", "mode": "my_wardrobe", "wardrobe": "empty", "prompt": "Build an outfit for dinner tonight"},
+    {"id": "mw_empty_office", "mode": "my_wardrobe", "wardrobe": "empty", "prompt": "Elegant office look"},
+
+    {"id": "mw_partial_casual", "mode": "my_wardrobe", "wardrobe": "partial", "prompt": "Casual outfit for today"},
+    {"id": "mw_partial_dinner", "mode": "my_wardrobe", "wardrobe": "partial", "prompt": "Smart casual for dinner"},
+    {"id": "mw_partial_rain", "mode": "my_wardrobe", "wardrobe": "partial", "prompt": "Something warm for rainy weather"},
+
+    {"id": "mw_full_casual", "mode": "my_wardrobe", "wardrobe": "full", "prompt": "What should I wear today?"},
+    {"id": "mw_full_dinner", "mode": "my_wardrobe", "wardrobe": "full", "prompt": "Outfit for a dinner date"},
+    {"id": "mw_full_coat", "mode": "my_wardrobe", "wardrobe": "full", "prompt": "Use my camel coat in an outfit"},
+
+    {"id": "wpa_empty_casual", "mode": "wardrobe_plus_ai", "wardrobe": "empty", "prompt": "Casual everyday outfit"},
+    {"id": "wpa_empty_formal", "mode": "wardrobe_plus_ai", "wardrobe": "empty", "prompt": "Formal event outfit with gaps filled"},
+    {"id": "wpa_empty_weekend", "mode": "wardrobe_plus_ai", "wardrobe": "empty", "prompt": "Weekend brunch look"},
+
+    {"id": "wpa_partial_casual", "mode": "wardrobe_plus_ai", "wardrobe": "partial", "prompt": "Fill the gaps in my casual outfit"},
+    {"id": "wpa_partial_office", "mode": "wardrobe_plus_ai", "wardrobe": "partial", "prompt": "Office outfit — complete what's missing"},
+    {"id": "wpa_partial_evening", "mode": "wardrobe_plus_ai", "wardrobe": "partial", "prompt": "Evening look with suggested pieces"},
+
+    {"id": "wpa_full_casual", "mode": "wardrobe_plus_ai", "wardrobe": "full", "prompt": "Casual outfit from my wardrobe"},
+    {"id": "wpa_full_gaps", "mode": "wardrobe_plus_ai", "wardrobe": "full", "prompt": "Suggest up to two pieces to elevate this look"},
+    {"id": "wpa_full_travel", "mode": "wardrobe_plus_ai", "wardrobe": "full", "prompt": "Comfortable travel outfit"},
+
+    {"id": "ai_empty_casual", "mode": "ai_inspiration", "wardrobe": "empty", "prompt": "Inspire a casual summer outfit"},
+    {"id": "ai_empty_elegant", "mode": "ai_inspiration", "wardrobe": "empty", "prompt": "Elegant inspiration for a gala"},
+    {"id": "ai_empty_minimal", "mode": "ai_inspiration", "wardrobe": "empty", "prompt": "Minimal monochrome outfit idea"},
+
+    {"id": "ai_partial_casual", "mode": "ai_inspiration", "wardrobe": "partial", "prompt": "Casual inspiration — mark what I already own"},
+    {"id": "ai_partial_office", "mode": "ai_inspiration", "wardrobe": "partial", "prompt": "Office inspiration outfit"},
+    {"id": "ai_partial_weekend", "mode": "ai_inspiration", "wardrobe": "partial", "prompt": "Weekend city-break outfit"},
+
+    {"id": "ai_full_casual", "mode": "ai_inspiration", "wardrobe": "full", "prompt": "Fresh casual outfit direction"},
+    {"id": "ai_full_formal", "mode": "ai_inspiration", "wardrobe": "full", "prompt": "Formal wedding guest inspiration"},
+    {"id": "ai_full_edgy", "mode": "ai_inspiration", "wardrobe": "full", "prompt": "Edgy streetwear inspired look"},
+
+    {"id": "wpa_partial_prefs", "mode": "wardrobe_plus_ai", "wardrobe": "partial", "prompt": "Fill gaps for a night out", "preferences": {"size": "M", "max_price": 50}, "check_search_spec": true},
+    {"id": "wpa_empty_prefs", "mode": "wardrobe_plus_ai", "wardrobe": "empty", "prompt": "Build outfit with budget in mind", "preferences": {"size": "S", "max_price": 30}, "check_search_spec": true},
+    {"id": "ai_partial_prefs", "mode": "ai_inspiration", "wardrobe": "partial", "prompt": "Inspire an outfit I can shop for", "preferences": {"size": "L", "max_price": 75}, "check_search_spec": true},
+
+    {"id": "mw_partial_repair", "mode": "my_wardrobe", "wardrobe": "partial", "prompt": "Casual look", "corruption": "duplicate_slot", "expect_path": "repair"},
+    {"id": "wpa_partial_repair_cap", "mode": "wardrobe_plus_ai", "wardrobe": "partial", "prompt": "Complete my outfit", "corruption": "over_cap_suggested", "expect_path": "repair"},
+    {"id": "wpa_partial_fallback", "mode": "wardrobe_plus_ai", "wardrobe": "partial", "prompt": "Formal gala outfit", "corruption": "schema_invalid_fallback", "expect_path": "fallback"}
+  ]
+}

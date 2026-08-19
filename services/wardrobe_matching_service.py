@@ -1,8 +1,12 @@
-from agents.base_agent import BaseAgent
+"""Deterministic wardrobe item matching for inline outfit edits."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
 from agents.detectors.color_detector import detect_colors
+from agents.inline_edit_config import InlineEditCriteria
 from context.runtime_helpers import resolve_memory, resolve_wardrobe
-from models.agent_context import AgentContext
-from models.agent_response import AgentResponse
 from wardrobe.repository_factory import create_wardrobe_repository
 from wardrobe.wardrobe_repository import WardrobeRepository
 
@@ -23,6 +27,11 @@ CATEGORY_NORMALIZATION = {
     "outerwear": "outerwear",
     "accessories": "accessory",
     "accessory": "accessory",
+}
+
+WEATHER_STYLE_BONUS = {
+    "warm": {"casual": 3, "comfortable": 3, "sporty": 2, "elegant": -1, "formal": -2},
+    "cold": {"elegant": 2, "classic": 2, "formal": 2, "casual": 0, "sporty": -1},
 }
 
 STYLE_SCORES = {
@@ -49,6 +58,15 @@ STYLE_SCORES = {
 }
 
 
+@dataclass
+class WardrobeMatchResult:
+    """Result shape consumed by InlineEditAgent (mirrors prior AgentResponse.data)."""
+
+    success: bool
+    message: str
+    data: dict
+
+
 def _normalize_category(category: str | None) -> str | None:
     if not category:
         return None
@@ -62,15 +80,11 @@ def _normalize_color(color: str | None) -> str:
     return "gray" if normalized == "grey" else normalized
 
 
-class WardrobeAgent(BaseAgent):
-    name = "wardrobe_agent"
-    description = "Searches the user's wardrobe for items by category and style."
+class WardrobeMatchingService:
+    """Scores wardrobe items and picks the best replacement for one outfit slot."""
 
     def __init__(self, wardrobe_repository: WardrobeRepository | None = None) -> None:
         self._wardrobe_repository = wardrobe_repository or create_wardrobe_repository()
-
-    def can_handle(self, plan: dict) -> bool:
-        return plan.get("intent") == "wardrobe_search"
 
     def find_replacement(
         self,
@@ -80,64 +94,25 @@ class WardrobeAgent(BaseAgent):
         instruction: str = "",
         wardrobe: list | dict | None = None,
         wardrobe_repository: WardrobeRepository | None = None,
-    ) -> AgentResponse:
+        edit_criteria: InlineEditCriteria | None = None,
+    ) -> WardrobeMatchResult:
         """Find the best wardrobe replacement for a single outfit item."""
-        return self.run(
-            user_input=instruction,
-            plan={"intent": "wardrobe_search"},
-            context={
-                "action": "find_replacement",
-                "target_item": target_item,
-                "target_style": target_style,
-                "memory": memory or {},
-                "instruction": instruction,
-                "wardrobe": wardrobe,
-                "wardrobe_repository": wardrobe_repository,
-            },
-        )
-
-    def run(
-        self,
-        user_input: str,
-        plan: dict,
-        context: AgentContext | dict | None = None,
-    ) -> AgentResponse:
-        if not isinstance(context, dict):
-            context = {}
-
-        action = context.get("action")
-        target_item = context.get("target_item")
-        target_style = context.get("target_style")
-        memory = resolve_memory(context.get("memory"))
-        instruction = context.get("instruction") or user_input
-        repository = context.get("wardrobe_repository") or self._wardrobe_repository
-        wardrobe = resolve_wardrobe(context.get("wardrobe"), repository)
-
-        if action != "find_replacement":
-            return AgentResponse(
-                success=False,
-                agent_name=self.name,
-                message="Unsupported wardrobe action.",
-                data={},
-                error=f"Unknown action: {action}",
-            )
-
-        if not target_item or not target_style:
-            return AgentResponse(
-                success=False,
-                agent_name=self.name,
-                message="Wardrobe search requires a target item and style.",
-                data={},
-                error="Missing target_item or target_style.",
-            )
-
-        category_items = self._get_category_items(wardrobe, target_item)
+        memory = resolve_memory(memory)
+        repository = wardrobe_repository or self._wardrobe_repository
+        wardrobe_data = resolve_wardrobe(wardrobe, repository)
         outfit_category = _normalize_category(target_item.get("category"))
 
+        if not target_item or not target_style:
+            return WardrobeMatchResult(
+                success=False,
+                message="Wardrobe search requires a target item and style.",
+                data={},
+            )
+
+        category_items = self._get_category_items(wardrobe_data, target_item)
         if not category_items:
-            return AgentResponse(
+            return WardrobeMatchResult(
                 success=True,
-                agent_name=self.name,
                 message=(
                     f"No wardrobe items found in the '{outfit_category}' category. "
                     "Add more pieces to your wardrobe first."
@@ -153,7 +128,11 @@ class WardrobeAgent(BaseAgent):
 
         disliked_items = memory.get("disliked_items", [])
         favorite_colors = memory.get("favorite_colors", [])
-        instruction_colors = detect_colors(instruction.lower())
+        if edit_criteria and edit_criteria.instruction_colors:
+            instruction_colors = list(edit_criteria.instruction_colors)
+        else:
+            instruction_colors = detect_colors(instruction.lower())
+        weather_hint = edit_criteria.weather_hint if edit_criteria else None
 
         best_item, match_type, explanation = self._find_best_replacement(
             category_items=category_items,
@@ -162,12 +141,12 @@ class WardrobeAgent(BaseAgent):
             disliked_items=disliked_items,
             favorite_colors=favorite_colors,
             instruction_colors=instruction_colors,
+            weather_hint=weather_hint,
         )
 
         if best_item is None:
-            return AgentResponse(
+            return WardrobeMatchResult(
                 success=True,
-                agent_name=self.name,
                 message=explanation,
                 data={
                     "replacement_item": None,
@@ -181,9 +160,8 @@ class WardrobeAgent(BaseAgent):
         normalized = dict(best_item)
         normalized["category"] = outfit_category or target_item.get("category")
 
-        return AgentResponse(
+        return WardrobeMatchResult(
             success=True,
-            agent_name=self.name,
             message=explanation,
             data={
                 "replacement_item": normalized,
@@ -220,9 +198,13 @@ class WardrobeAgent(BaseAgent):
         target_style: str,
         favorite_colors: list[str],
         instruction_colors: list[str],
+        weather_hint: str | None = None,
     ) -> int:
         item_style = item.get("style", "casual")
         style_score = STYLE_SCORES.get(target_style, {}).get(item_style, 3)
+
+        if weather_hint:
+            style_score += WEATHER_STYLE_BONUS.get(weather_hint, {}).get(item_style, 0)
 
         color_bonus = 0
         item_color = _normalize_color(item.get("color"))
@@ -245,6 +227,7 @@ class WardrobeAgent(BaseAgent):
         disliked_items: list[str],
         favorite_colors: list[str],
         instruction_colors: list[str],
+        weather_hint: str | None = None,
     ) -> tuple[dict | None, str | None, str]:
         target_name = target_item.get("name", "").strip().lower()
         candidates: list[tuple[int, dict]] = []
@@ -262,6 +245,7 @@ class WardrobeAgent(BaseAgent):
                 target_style,
                 favorite_colors,
                 instruction_colors,
+                weather_hint=weather_hint,
             )
             candidates.append((score, item))
 
@@ -281,9 +265,7 @@ class WardrobeAgent(BaseAgent):
 
         if item_style == target_style:
             match_type = "exact"
-            explanation = (
-                f"Found an exact {target_style} match in your wardrobe."
-            )
+            explanation = f"Found an exact {target_style} match in your wardrobe."
         else:
             match_type = "closest"
             explanation = (

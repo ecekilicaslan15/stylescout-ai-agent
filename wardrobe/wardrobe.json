@@ -5,35 +5,65 @@
             "category": "tops",
             "color": "white",
             "style": "elegant",
-            "image_url": "https://images.unsplash.com/photo-1596755094514-f87e34085b2b?w=520&q=80"
+            "image_url": "https://i.pinimg.com/736x/eb/5a/09/eb5a09c83038bf5af1830ed2fae53574.jpg",
+            "id": "itm_c5f7e94b",
+            "user_id": "default",
+            "source": "wardrobe",
+            "owned": true,
+            "created_at": "2026-07-27T13:07:09Z",
+            "updated_at": "2026-07-27T13:07:09Z"
         },
         {
             "name": "Black Elegant Shirt",
             "category": "tops",
             "color": "black",
             "style": "elegant",
-            "image_url": "https://images.unsplash.com/photo-1602810318383-0dda8ae73780?w=520&q=80"
+            "image_url": "https://i.pinimg.com/1200x/39/fd/61/39fd612e254a649ead0006ae6d5c7331.jpg",
+            "id": "itm_034906bc",
+            "user_id": "default",
+            "source": "wardrobe",
+            "owned": true,
+            "created_at": "2026-07-27T13:07:09Z",
+            "updated_at": "2026-07-27T13:07:09Z"
         },
         {
             "name": "Casual White T-Shirt",
             "category": "tops",
             "color": "white",
             "style": "casual",
-            "image_url": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=520&q=80"
+            "image_url": "https://i.pinimg.com/1200x/b3/ba/0c/b3ba0c17cfa1c538fa2e7838d00ee24a.jpg",
+            "id": "itm_b4d4792e",
+            "user_id": "default",
+            "source": "wardrobe",
+            "owned": true,
+            "created_at": "2026-07-27T13:07:09Z",
+            "updated_at": "2026-07-27T13:07:09Z"
         },
         {
             "name": "Navy Blouse",
             "category": "tops",
             "color": "navy",
             "style": "elegant",
-            "image_url": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=520&q=80"
+            "image_url": "https://i.pinimg.com/1200x/4f/cb/7a/4fcb7a86251f763ba1696bf5685b0549.jpg",
+            "id": "itm_1d885443",
+            "user_id": "default",
+            "source": "wardrobe",
+            "owned": true,
+            "created_at": "2026-07-27T13:07:09Z",
+            "updated_at": "2026-07-27T13:07:09Z"
         },
         {
             "name": "Pink Blouse",
             "category": "tops",
             "color": "pink",
             "style": "elegant",
-            "image_url": "https://images.unsplash.com/photo-1582552938352-1763f3952ced?w=520&q=80"
+            "image_url": "https://i.pinimg.com/1200x/d6/00/e0/d600e04779f5aa0859a071b1d9472202.jpg",
+            "id": "itm_a7911524",
+            "user_id": "default",
+            "source": "wardrobe",
+            "owned": true,
+            "created_at": "2026-07-27T13:07:09Z",
+            "updated_at": "2026-07-27T13:07:09Z"
         }
     ],
     "bottoms": [
@@ -42,42 +72,92 @@
             "category": "bottoms",
             "color": "beige",
             "style": "elegant",
-            "image_url": "https://images.unsplash.com/photo-1624373515198-049ae905ddeb?w=520&q=80"
+            "image_url": "https://i.pinimg.com/1200x/df/64/77/df6477a9b6d78d30bb82f658de07f481.jpg",
+            "id": "itm_1605ab41",
+            "user_id": "default",
+            "source": "wardrobe",
+            "owned": true,
+            "created_at": "2026-07-27T13:07:09Z",
+            "updated_at": "2026-07-27T13:07:09Z"
         },
         {
             "name": "Black Tailored Trousers",
             "category": "bottoms",
             "color": "black",
             "style": "elegant",
-            "image_url": "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=520&q=80"
+            "image_url": "https://i.pinimg.com/736x/72/6b/e7/726be74cb4ddd212f23a64aee9cd076f.jpg",
+            "id": "itm_05dccf67",
+            "user_id": "default",
+            "source": "wardrobe",
+            "owned": true,
+            "created_at": "2026-07-27T13:07:09Z",
+            "updated_at": "2026-07-27T13:07:09Z"
         },
         {
             "name": "Blue Jeans",
             "category": "bottoms",
             "color": "blue",
             "style": "casual",
-            "image_url": "https://images.unsplash.com/photo-1542272604-787c3835535d?w=520&q=80"
+            "image_url": "https://i.pinimg.com/1200x/ae/95/dc/ae95dc9ce9dfbe2e8ea86e07b48fdcdf.jpg",
+            "id": "itm_98d4adca",
+            "user_id": "default",
+            "source": "wardrobe",
+            "owned": true,
+            "created_at": "2026-07-27T13:07:09Z",
+            "updated_at": "2026-07-27T13:07:09Z"
         },
         {
             "name": "Black Jeans",
             "category": "bottoms",
             "color": "black",
             "style": "casual",
-            "image_url": "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=520&q=80"
+            "image_url": "https://i.pinimg.com/736x/a2/8f/d1/a28fd11e86d9f25bc59c9ac42d4839e4.jpg",
+            "id": "itm_c54e1d1a",
+            "user_id": "default",
+            "source": "wardrobe",
+            "owned": true,
+            "created_at": "2026-07-27T13:07:09Z",
+            "updated_at": "2026-07-27T13:07:09Z"
         },
         {
             "name": "Navy Skirt",
             "category": "bottoms",
             "color": "navy",
             "style": "elegant",
-            "image_url": "https://images.unsplash.com/photo-1583498257823-83f4fdfbaf4a?w=520&q=80"
+            "image_url": "https://i.pinimg.com/1200x/11/9b/43/119b4356ad4f3488eb6c0c333025a59d.jpg",
+            "id": "itm_e060f49e",
+            "user_id": "default",
+            "source": "wardrobe",
+            "owned": true,
+            "created_at": "2026-07-27T13:07:09Z",
+            "updated_at": "2026-07-27T13:07:09Z"
         },
         {
             "name": "Beige Skirt",
             "category": "bottoms",
             "color": "beige",
             "style": "elegant",
-            "image_url": "https://images.unsplash.com/photo-159136086677ef9fa8a47c1f0?w=520&q=80"
+            "image_url": "https://i.pinimg.com/1200x/1b/9a/97/1b9a97cde57f841acc7017c4cf901550.jpg",
+            "id": "itm_74342c7d",
+            "user_id": "default",
+            "source": "wardrobe",
+            "owned": true,
+            "created_at": "2026-07-27T13:07:09Z",
+            "updated_at": "2026-07-27T13:07:09Z"
+        },
+        {
+            "name": "Black Jeans",
+            "category": "bottoms",
+            "color": "black",
+            "style": "casual",
+            "event": "everyday",
+            "image_url": "https://i.pinimg.com/1200x/6c/7b/3f/6c7b3f298400c1651d08a36035d432cb.jpg",
+            "id": "itm_f533acb5",
+            "user_id": "default",
+            "source": "wardrobe",
+            "owned": true,
+            "created_at": "2026-07-27T12:53:08Z",
+            "updated_at": "2026-07-27T12:53:08Z"
         }
     ],
     "shoes": [
@@ -86,49 +166,91 @@
             "category": "shoes",
             "color": "black",
             "style": "elegant",
-            "image_url": "https://images.unsplash.com/photo-1543163521-1bf539c55dc2?w=520&q=80"
+            "image_url": "https://i.pinimg.com/1200x/57/03/e7/5703e7c0f5ea16354f5bdf34cc80ede4.jpg",
+            "id": "itm_9f43b54e",
+            "user_id": "default",
+            "source": "wardrobe",
+            "owned": true,
+            "created_at": "2026-07-27T13:07:09Z",
+            "updated_at": "2026-07-27T13:07:09Z"
         },
         {
             "name": "Beige Heels",
             "category": "shoes",
             "color": "beige",
             "style": "elegant",
-            "image_url": "https://images.unsplash.com/photo-1515342874599-b60599f8d350?w=520&q=80"
+            "image_url": "https://i.pinimg.com/1200x/0a/7a/6c/0a7a6c26f78f82147099c9429d0235b8.jpg",
+            "id": "itm_09b7777c",
+            "user_id": "default",
+            "source": "wardrobe",
+            "owned": true,
+            "created_at": "2026-07-27T13:07:09Z",
+            "updated_at": "2026-07-27T13:07:09Z"
         },
         {
             "name": "Black Loafers",
             "category": "shoes",
             "color": "black",
             "style": "elegant",
-            "image_url": "https://images.unsplash.com/photo-1533860876773-56c4274edcd7?w=520&q=80"
+            "image_url": "https://i.pinimg.com/1200x/b6/cf/d4/b6cfd476a9fbaa0a24d3dcf8f08eb459.jpg",
+            "id": "itm_b5d0805d",
+            "user_id": "default",
+            "source": "wardrobe",
+            "owned": true,
+            "created_at": "2026-07-27T13:07:09Z",
+            "updated_at": "2026-07-27T13:07:09Z"
         },
         {
             "name": "White Sneakers",
             "category": "shoes",
             "color": "white",
             "style": "casual",
-            "image_url": "https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=520&q=80"
+            "image_url": "https://i.pinimg.com/736x/ae/5b/f2/ae5bf201082309b1eb34453a38d87647.jpg",
+            "id": "itm_d5beb53b",
+            "user_id": "default",
+            "source": "wardrobe",
+            "owned": true,
+            "created_at": "2026-07-27T13:07:09Z",
+            "updated_at": "2026-07-27T13:07:09Z"
         },
         {
             "name": "Black Sneakers",
             "category": "shoes",
             "color": "black",
             "style": "casual",
-            "image_url": "https://images.unsplash.com/photo-1595950653102-6c7506a63497?w=520&q=80"
+            "image_url": "https://i.pinimg.com/736x/f7/22/4d/f7224d2966373f3267699092a9b5d9bb.jpg",
+            "id": "itm_f31deb6a",
+            "user_id": "default",
+            "source": "wardrobe",
+            "owned": true,
+            "created_at": "2026-07-27T13:07:09Z",
+            "updated_at": "2026-07-27T13:07:09Z"
         },
         {
             "name": "Brown Boots",
             "category": "shoes",
             "color": "brown",
             "style": "casual",
-            "image_url": "https://images.unsplash.com/photo-1608256896670-ee1652783295?w=520&q=80"
+            "image_url": "https://i.pinimg.com/1200x/8e/40/f9/8e40f9e07bdc917868f193ddcc94e37d.jpg",
+            "id": "itm_dec06d9a",
+            "user_id": "default",
+            "source": "wardrobe",
+            "owned": true,
+            "created_at": "2026-07-27T13:07:09Z",
+            "updated_at": "2026-07-27T13:07:09Z"
         },
         {
             "name": "Black Boots",
             "category": "shoes",
             "color": "black",
             "style": "elegant",
-            "image_url": "https://images.unsplash.com/photo-1638244389020-ca63a7c512be?w=520&q=80"
+            "image_url": "https://i.pinimg.com/736x/f7/b0/3f/f7b03fc82d433913e56d1fcc3cf69565.jpg",
+            "id": "itm_d9dad1af",
+            "user_id": "default",
+            "source": "wardrobe",
+            "owned": true,
+            "created_at": "2026-07-27T13:07:09Z",
+            "updated_at": "2026-07-27T13:07:09Z"
         }
     ],
     "outerwear": [
@@ -137,35 +259,65 @@
             "category": "outerwear",
             "color": "black",
             "style": "elegant",
-            "image_url": "https://images.unsplash.com/photo-1507679799987-c737795e771a?w=520&q=80"
+            "image_url": "https://i.pinimg.com/1200x/b9/8b/1b/b98b1bd04420a6651236f6177da18f0e.jpg",
+            "id": "itm_3a75317d",
+            "user_id": "default",
+            "source": "wardrobe",
+            "owned": true,
+            "created_at": "2026-07-27T13:07:09Z",
+            "updated_at": "2026-07-27T13:07:09Z"
         },
         {
             "name": "Beige Blazer",
             "category": "outerwear",
             "color": "beige",
             "style": "elegant",
-            "image_url": "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=520&q=80"
+            "image_url": "https://i.pinimg.com/736x/71/42/76/714276c5197a16de820f26f6834ef523.jpg",
+            "id": "itm_fef26707",
+            "user_id": "default",
+            "source": "wardrobe",
+            "owned": true,
+            "created_at": "2026-07-27T13:07:09Z",
+            "updated_at": "2026-07-27T13:07:09Z"
         },
         {
             "name": "Grey Cardigan",
             "category": "outerwear",
             "color": "gray",
             "style": "casual",
-            "image_url": "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=520&q=80"
+            "image_url": "https://i.pinimg.com/736x/16/9e/f2/169ef26451763d3e4b8ac6704afa350b.jpg",
+            "id": "itm_7722f18b",
+            "user_id": "default",
+            "source": "wardrobe",
+            "owned": true,
+            "created_at": "2026-07-27T13:07:09Z",
+            "updated_at": "2026-07-27T13:07:09Z"
         },
         {
             "name": "Beige Trench Coat",
             "category": "outerwear",
             "color": "beige",
             "style": "elegant",
-            "image_url": "https://images.unsplash.com/photo-1576871334434-04017c14af8b?w=520&q=80"
+            "image_url": "https://i.pinimg.com/736x/f1/4d/5b/f14d5ba5997cecb20d93add2ff9eff4a.jpg",
+            "id": "itm_17adfe1d",
+            "user_id": "default",
+            "source": "wardrobe",
+            "owned": true,
+            "created_at": "2026-07-27T13:07:09Z",
+            "updated_at": "2026-07-27T13:07:09Z"
         },
         {
             "name": "Navy Trench Coat",
             "category": "outerwear",
             "color": "navy",
             "style": "elegant",
-            "image_url": "https://images.unsplash.com/photo-1539533018447-843e46786672?w=520&q=80"
+            "image_url": "https://i.pinimg.com/1200x/9d/1e/f6/9d1ef6baafc3cdf0d6671826a9bd3d07.jpg",
+            "id": "itm_d40700fd",
+            "user_id": "default",
+            "source": "wardrobe",
+            "owned": true,
+            "created_at": "2026-07-27T13:07:09Z",
+            "updated_at": "2026-07-27T13:07:09Z"
         }
     ],
     "accessories": [
@@ -174,35 +326,65 @@
             "category": "accessories",
             "color": "gold",
             "style": "elegant",
-            "image_url": "https://images.unsplash.com/photo-1515566607541-a3c25d5e7d59?w=520&q=80"
+            "image_url": "https://i.pinimg.com/1200x/8b/2a/fb/8b2afb11c4d2be468f52dbe7d406f16a.jpg",
+            "id": "itm_8cd52c7d",
+            "user_id": "default",
+            "source": "wardrobe",
+            "owned": true,
+            "created_at": "2026-07-27T13:07:09Z",
+            "updated_at": "2026-07-27T13:07:09Z"
         },
         {
             "name": "Silk Scarf",
             "category": "accessories",
             "color": "beige",
             "style": "elegant",
-            "image_url": "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=520&q=80"
+            "image_url": "https://i.pinimg.com/1200x/aa/d7/56/aad756f99b2feb5df7e5dd647a921e7a.jpg",
+            "id": "itm_013a5603",
+            "user_id": "default",
+            "source": "wardrobe",
+            "owned": true,
+            "created_at": "2026-07-27T13:07:09Z",
+            "updated_at": "2026-07-27T13:07:09Z"
         },
         {
             "name": "Black Belt",
             "category": "accessories",
             "color": "black",
             "style": "elegant",
-            "image_url": "https://images.unsplash.com/photo-1624225172865-aa8e378375cc?w=520&q=80"
+            "image_url": "https://i.pinimg.com/1200x/f5/df/e0/f5dfe050446b467410429a8ed48ebce7.jpg",
+            "id": "itm_15e663b5",
+            "user_id": "default",
+            "source": "wardrobe",
+            "owned": true,
+            "created_at": "2026-07-27T13:07:09Z",
+            "updated_at": "2026-07-27T13:07:09Z"
         },
         {
-            "name": "Casual Crossbody Bag",
+            "name": "Casual Shoulder Bag",
             "category": "accessories",
             "color": "brown",
             "style": "casual",
-            "image_url": "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=520&q=80"
+            "image_url": "https://i.pinimg.com/1200x/07/ee/32/07ee3226c30f897e8cf5a266e73dcd20.jpg",
+            "id": "itm_f830ad65",
+            "user_id": "default",
+            "source": "wardrobe",
+            "owned": true,
+            "created_at": "2026-07-27T13:07:09Z",
+            "updated_at": "2026-07-27T13:07:09Z"
         },
         {
             "name": "Structured Handbag",
             "category": "accessories",
             "color": "black",
             "style": "elegant",
-            "image_url": "https://images.unsplash.com/photo-1584917865442-de89ab76b7cb?w=520&q=80"
+            "image_url": "https://i.pinimg.com/736x/4a/7f/a9/4a7fa99e3ba4cc8c80f4e0eaaee97cf9.jpg",
+            "id": "itm_c4d6c3b8",
+            "user_id": "default",
+            "source": "wardrobe",
+            "owned": true,
+            "created_at": "2026-07-27T13:07:09Z",
+            "updated_at": "2026-07-27T13:07:09Z"
         }
     ]
 }

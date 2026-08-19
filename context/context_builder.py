@@ -1,4 +1,5 @@
 from models.agent_context import AgentContext
+from models.styling_mode import DEFAULT_STYLING_MODE, StylingMode
 from wardrobe.wardrobe_repository import WardrobeRepository
 
 
@@ -15,11 +16,15 @@ class ContextBuilder:
         wardrobe=None,
         conversation_history=None,
         wardrobe_repository: WardrobeRepository | None = None,
+        mode: StylingMode = DEFAULT_STYLING_MODE,
+        preferences=None,
     ) -> AgentContext:
         return AgentContext(
             user_input=user_input,
+            mode=mode,
             plan=plan,
             memory=memory if memory is not None else {},
+            preferences=preferences if preferences is not None else {},
             current_outfit=current_outfit if current_outfit is not None else [],
             selected_item=selected_item,
             wardrobe=wardrobe if wardrobe is not None else [],

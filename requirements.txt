@@ -1,6 +1,6 @@
-streamlit
 pytest
 python-dotenv
 requests
 fastapi
 uvicorn[standard]
+httpx2>=2.0.0

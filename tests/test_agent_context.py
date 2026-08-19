@@ -5,11 +5,13 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from agents.inline_edit_agent import InlineEditAgent
-from agents.memory_agent import MemoryAgent
 from agents.stylist_agent import StylistAgent
+from context.context_builder import ContextBuilder
+from memory.memory_manager import update_memory_from_plan
 from models.agent_context import AgentContext
 from models.agent_response import AgentResponse
 from models.plan import Plan, plan_to_dict
+from models.styling_mode import StylingMode
 from orchestrator.fashion_orchestrator import FashionOrchestrator
 from services.rag_service import RetrievedChunk
 from wardrobe.json_wardrobe_repository import JsonWardrobeRepository
@@ -163,14 +165,9 @@ class TestOrchestratorContextFlow:
         stylist_memories: list[dict] = []
         call_order: list[str] = []
 
-        def memory_run(self, user_input, plan, context=None):
-            call_order.append("memory_agent")
-            return AgentResponse(
-                success=True,
-                agent_name="memory_agent",
-                message="saved",
-                data={"memory": updated_memory},
-            )
+        def memory_run(plan):
+            call_order.append("memory_service")
+            return updated_memory
 
         def stylist_run(self, user_input, plan, context=None):
             call_order.append("stylist_agent")
@@ -185,7 +182,10 @@ class TestOrchestratorContextFlow:
         mock_repository = MagicMock(spec=JsonWardrobeRepository)
         mock_repository.get_all.return_value = []
 
-        with patch.object(MemoryAgent, "run", memory_run):
+        with patch(
+            "orchestrator.fashion_orchestrator.update_memory_from_plan",
+            side_effect=memory_run,
+        ):
             with patch.object(StylistAgent, "run", stylist_run):
                 with patch(
                     "orchestrator.fashion_orchestrator.plan_user_request",
@@ -204,9 +204,50 @@ class TestOrchestratorContextFlow:
                         ).run("I love purple elegant outfits")
 
         mock_repository.get_all.assert_called_once()
-        assert call_order == ["memory_agent", "stylist_agent"]
+        assert call_order == ["memory_service", "stylist_agent"]
         assert stylist_memories[0]["favorite_colors"] == ["purple"]
         assert result["memory"]["favorite_colors"] == ["purple"]
+
+
+class TestModePlumbing:
+    def test_context_builder_sets_mode(self):
+        context = ContextBuilder().build(
+            user_input="casual outfit",
+            mode=StylingMode.AI_INSPIRATION,
+        )
+
+        assert context.mode == StylingMode.AI_INSPIRATION
+
+    @pytest.mark.parametrize("mode", list(StylingMode))
+    def test_orchestrator_passes_mode_to_agent_context(self, mode: StylingMode):
+        captured: dict = {}
+
+        def stylist_run(_self, user_input, plan_dict, context):
+            captured["mode"] = context.mode
+            return AgentResponse(
+                success=True,
+                agent_name="stylist_agent",
+                message="ok",
+                data={"outfit": {"items": [], "event": "daily", "style": "casual"}},
+            )
+
+        mock_repository = MagicMock(spec=JsonWardrobeRepository)
+        mock_repository.get_all.return_value = []
+
+        with patch.object(StylistAgent, "run", stylist_run):
+            with patch(
+                "orchestrator.fashion_orchestrator.plan_user_request",
+                return_value=Plan(intent="outfit_request"),
+            ):
+                with patch(
+                    "orchestrator.fashion_orchestrator.load_memory",
+                    return_value={"favorite_colors": [], "preferred_styles": [], "disliked_items": []},
+                ):
+                    FashionOrchestrator(
+                        wardrobe_repository=mock_repository,
+                    ).run("casual outfit", mode=mode)
+
+        assert captured["mode"] == mode
 
 
 class TestInlineEditAgentContext:

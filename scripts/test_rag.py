@@ -1,8 +1,15 @@
+"""Manual RAG keyword-retrieval check — run from repo root: python scripts/test_rag.py"""
+
+import sys
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from services.rag_service import RagService
 
-KNOWLEDGE_DIR = Path(__file__).resolve().parent / "knowledge"
+KNOWLEDGE_DIR = ROOT / "knowledge"
 
 
 def _headings(results) -> list[str]:

@@ -28,6 +28,6 @@ def create_wardrobe_repository(
         )
 
     if selected_backend == "json":
-        return JsonWardrobeRepository()
+        return JsonWardrobeRepository(user_id=user_id)
 
     return SqliteWardrobeRepository(user_id=user_id)
