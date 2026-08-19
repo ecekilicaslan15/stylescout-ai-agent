@@ -44,6 +44,7 @@ def isolate_json_storage(tmp_path, monkeypatch):
     saved_tmp.write_text("[]", encoding="utf-8")
     monkeypatch.setenv("WARDROBE_JSON_PATH", str(wardrobe_tmp))
     monkeypatch.setenv("SAVED_OUTFITS_JSON_PATH", str(saved_tmp))
+    monkeypatch.setenv("ALLOW_DEFAULT_OVERRIDE", "true")
     yield
 
 # Unique names make it obvious whether context or disk data was used.

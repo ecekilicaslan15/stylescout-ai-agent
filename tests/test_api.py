@@ -89,6 +89,10 @@ class TestOutfitsEndpoint:
 
         assert response.status_code == 400
 
+    @patch(
+        "api.main.OutfitValidator.validate_and_finalize",
+        side_effect=lambda outfit, *_args, **_kwargs: outfit,
+    )
     @patch("api.main.run_fashion_agent")
     @patch("api.main.update_wardrobe_from_input", return_value=None)
     @patch("api.main.update_memory_from_input")
@@ -97,6 +101,7 @@ class TestOutfitsEndpoint:
         mock_update_memory,
         mock_update_wardrobe,
         mock_run_fashion_agent,
+        _mock_gate,
     ):
         mock_run_fashion_agent.return_value = {
             "plan": Plan(intent="outfit_request", event="daily", style="casual"),
@@ -113,10 +118,13 @@ class TestOutfitsEndpoint:
                 "reason": "Built from your wardrobe.",
                 "items": [
                     {
+                        "id": "itm_test_shirt",
                         "name": "White Elegant Shirt",
                         "category": "top",
                         "color": "white",
                         "style": "elegant",
+                        "source": "wardrobe",
+                        "owned": True,
                     }
                 ],
             },
@@ -292,6 +300,7 @@ class TestInlineEditEndpoint:
         assert payload["updated_item"]["category"] == "Tops"
         assert payload["updated_item"]["name"] == "White Elegant Shirt"
         mock_run_inline_edit.assert_called_once()
+        assert "explanation" not in payload
 
     def test_to_agent_item_maps_display_category(self):
         agent_item = to_agent_item(

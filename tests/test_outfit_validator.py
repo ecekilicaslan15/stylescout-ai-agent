@@ -64,14 +64,39 @@ class TestOutfitValidator:
         outfit = _valid_my_wardrobe_outfit()
         OutfitValidator.validate(outfit, EMPTY_WARDROBE, StylingMode.MY_WARDROBE)
 
-    def test_other_modes_do_not_raise(self):
+    def test_wardrobe_plus_ai_rejects_more_than_two_suggested(self):
         outfit = {
-            "items": [{"name": "Catalogue Top", "source": "suggested", "owned": False}],
+            "items": [
+                {"name": "S1", "category": "bottom", "source": "suggested", "owned": False},
+                {"name": "S2", "category": "shoes", "source": "suggested", "owned": False},
+                {"name": "S3", "category": "outerwear", "source": "suggested", "owned": False},
+            ],
             "reason": "test",
         }
 
-        OutfitValidator.validate(outfit, EMPTY_WARDROBE, StylingMode.WARDROBE_PLUS_AI)
-        OutfitValidator.validate(outfit, EMPTY_WARDROBE, StylingMode.AI_INSPIRATION)
+        errors = OutfitValidator.collect_errors(
+            outfit,
+            EMPTY_WARDROBE,
+            StylingMode.WARDROBE_PLUS_AI,
+        )
+        assert any("max is 2" in error for error in errors)
+
+    def test_ai_inspiration_requires_provenance_fields(self):
+        outfit = OutfitValidator._document_missing_slots(
+            {
+                "items": [{"name": "Catalogue Top", "category": "top"}],
+                "reason": "test",
+            }
+        )
+
+        errors = OutfitValidator.collect_errors(
+            outfit,
+            EMPTY_WARDROBE,
+            StylingMode.AI_INSPIRATION,
+        )
+        assert any(
+            "missing owned flag" in error or "invalid source" in error for error in errors
+        )
 
     def test_wardrobe_item_key_prefers_repository_id(self):
         item = {"id": 42, "name": "Ignored", "category": "tops"}

@@ -6,7 +6,6 @@ from urllib.parse import parse_qs, urlparse
 import pytest
 from fastapi.testclient import TestClient
 
-from agents.shopping_agent import ShoppingAgent
 from agents.stylist_agent import MAX_HYBRID_SUGGESTED_ITEMS
 from api.main import _attach_shopping_links, app, serialize_fashion_agent_result
 from api.session import LEGACY_USER_ID
@@ -93,10 +92,9 @@ class TestShoppingService:
         assert link.startswith("https://www.vinted.com/catalog?search_text=")
 
 
-class TestShoppingAgentDelegation:
-    def test_wrapper_delegates_to_shopping_service(self):
+class TestShoppingServiceDelegation:
+    def test_builds_search_spec_and_deep_links_for_item(self):
         service = ShoppingService()
-        agent = ShoppingAgent(shopping_service=service)
         item = {
             "name": "White Sneakers",
             "category": "shoes",
@@ -106,16 +104,13 @@ class TestShoppingAgentDelegation:
             "owned": False,
         }
 
-        response = agent.run(
-            "find shopping links",
-            {"intent": "shopping_request"},
-            {"item": item},
-        )
+        spec = service.build_search_spec(item)
+        links = service.build_deep_links(spec)
+        primary = links.get("vinted") or next(iter(links.values()), None)
 
-        assert response.success is True
-        assert response.data["search_spec"]["name"] == "White Sneakers"
-        assert "vinted" in response.data["shopping_links"]
-        assert response.data["shopping_link"].startswith("https://www.vinted.com/catalog")
+        assert spec.name == "White Sneakers"
+        assert "vinted" in links
+        assert primary.startswith("https://www.vinted.com/catalog")
 
 
 class TestOutfitShoppingLinksApi:

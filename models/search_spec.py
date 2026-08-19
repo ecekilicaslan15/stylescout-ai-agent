@@ -37,9 +37,11 @@ class SearchSpec(BaseModel):
     category: str = Field(min_length=1)
     color: str = Field(min_length=1)
     style: str = Field(min_length=1)
+    max_price: float | None = None
+    size: str | None = None
 
 
-def build_search_spec(item: dict) -> SearchSpec:
+def build_search_spec(item: dict, preferences: dict | None = None) -> SearchSpec:
     """Build a SearchSpec from an outfit/serializer item dict."""
     name = (item.get("name") or "").strip()
     if not name:
@@ -52,4 +54,22 @@ def build_search_spec(item: dict) -> SearchSpec:
     color = (item.get("color") or "neutral").strip().lower()
     style = (item.get("style") or "casual").strip().lower()
 
-    return SearchSpec(name=name, category=category, color=color, style=style)
+    max_price = None
+    size = None
+    if preferences:
+        raw_price = preferences.get("max_price")
+        if raw_price is not None:
+            max_price = float(raw_price)
+        raw_size = preferences.get("size")
+        if raw_size:
+            cleaned_size = str(raw_size).strip()
+            size = cleaned_size or None
+
+    return SearchSpec(
+        name=name,
+        category=category,
+        color=color,
+        style=style,
+        max_price=max_price,
+        size=size,
+    )

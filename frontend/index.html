@@ -324,6 +324,26 @@ input{font-family:var(--font-body);}
 .provenance-badge{position:absolute;top:8px;left:8px;font-family:var(--font-mono);font-size:8.5px;letter-spacing:0.06em;text-transform:uppercase;padding:3px 8px;border-radius:5px;border:1px solid;}
 .provenance-owned{background:var(--turquoise-soft);color:var(--turquoise-dark);border-color:var(--turquoise);}
 .provenance-suggested{background:var(--surface);color:var(--text-secondary);border-color:var(--border);}
+.gcard .provenance-badge{top:12px;left:12px;z-index:2;opacity:1;}
+.tagrow .provenance-badge{position:static;display:inline-block;transform:rotate(-2deg);}
+
+.validation-notice-wrap{margin:14px 0 4px;}
+.validation-notice{padding:14px 16px;border-radius:var(--radius-lg);border:1px solid;font-size:13px;line-height:1.5;text-align:left;}
+.validation-notice strong{display:block;font-family:var(--font-mono);font-size:10px;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:6px;}
+.validation-notice p{margin:0;font-family:var(--font-body);font-style:normal;font-size:13px;color:inherit;}
+.validation-notice-fallback{background:#fff8ec;border-color:#e8c468;color:#7a5c00;}
+.validation-notice-repaired{background:#eef8ff;border-color:#8ecae6;color:#1e4d63;}
+
+.privacy-link{color:var(--text-secondary);border-color:var(--border);background:transparent;}
+.privacy-dialog{position:fixed;inset:0;z-index:140;display:none;align-items:center;justify-content:center;padding:24px;}
+.privacy-dialog.show{display:flex;}
+.privacy-scrim{position:absolute;inset:0;background:rgba(20,18,16,.45);}
+.privacy-panel{position:relative;z-index:1;width:min(520px,100%);max-height:min(82vh,640px);overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);padding:24px 26px;box-shadow:var(--shadow-rest);}
+.privacy-panel h3{font-family:var(--font-display);font-weight:500;font-size:22px;margin-bottom:12px;}
+.privacy-panel p,.privacy-panel li{font-size:14px;line-height:1.55;color:var(--text-secondary);margin:0 0 12px;}
+.privacy-panel ul{margin:0 0 12px;padding-left:20px;}
+.privacy-panel strong{color:var(--text-primary);}
+.privacy-close{margin-top:16px;}
 
 .outfit-summary{font-family:var(--font-mono);font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--turquoise-dark);text-align:center;margin:8px 0 2px;}
 .outfit-empty-notice{text-align:center;padding:28px 20px 8px;color:var(--text-secondary);font-size:14px;line-height:1.6;}
@@ -335,6 +355,18 @@ input{font-family:var(--font-body);}
 .session-actions{display:flex;gap:12px;justify-content:center;}
 .session-hint{text-align:center;font-size:12px;color:var(--text-secondary);margin-top:14px;}
 .session-hint b{color:var(--turquoise-dark);font-weight:500;}
+.preferences-panel{margin-top:22px;padding:18px 20px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface);}
+.preferences-panel h3{font-family:var(--font-display);font-weight:500;font-size:20px;margin-bottom:6px;}
+.preferences-intro{color:var(--text-secondary);font-size:13px;margin-bottom:14px;line-height:1.45;}
+.preferences-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;align-items:end;}
+.preferences-form label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text-secondary);}
+.preferences-form input{padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:#fff;}
+.preferences-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
+.preferences-error{color:var(--danger);font-size:13px;margin-top:10px;}
+.explanation-panel{margin-top:18px;padding:16px 18px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface);}
+.explanation-panel h3{font-family:var(--font-display);font-weight:500;font-size:18px;margin-bottom:10px;}
+.explanation-list{margin:0;padding-left:20px;color:var(--text-secondary);font-size:14px;line-height:1.55;}
+.explanation-list li{margin-bottom:6px;}
 
 @media (max-width:900px){
   .hero{grid-template-columns:1fr;text-align:center;padding-top:0;}
@@ -424,7 +456,10 @@ input{font-family:var(--font-body);}
         <span style="font-family:var(--font-display);font-weight:500;font-size:30px;letter-spacing:-0.01em;">My wardrobe</span>
         <span class="item-count" id="count">Loading…</span>
       </div>
-      <button class="btn-sm btn-add" id="addItemBtn" type="button">+ Add item</button>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn-sm privacy-link" id="privacyLinkBtn" type="button" onclick="openPrivacyPanel()">Data &amp; privacy</button>
+        <button class="btn-sm btn-add" id="addItemBtn" type="button">+ Add item</button>
+      </div>
     </header>
 
     <!-- AI CONSOLE -->
@@ -575,6 +610,23 @@ input{font-family:var(--font-body);}
   </form>
 </div>
 
+<div class="privacy-dialog" id="privacyDialog" role="dialog" aria-modal="true" aria-labelledby="privacyTitle">
+  <div class="privacy-scrim" onclick="closePrivacyPanel()"></div>
+  <div class="privacy-panel">
+    <h3 id="privacyTitle">Data &amp; privacy</h3>
+    <p>StyleScout stores data on the server that runs this app. Here is what that means in plain language.</p>
+    <ul>
+      <li><strong>Your wardrobe, saved outfits, and shopping preferences</strong> (optional size and max price) are tied to your browser session via an httpOnly cookie (<code>stylescout_session</code>). Each new browser gets its own session id unless you use the legacy demo cookie.</li>
+      <li><strong>Style memory</strong> (favorite colors, preferred styles, and disliked items learned from prompts) is stored in a <strong>single shared file on the server</strong>, not per session. On a shared deployment, styling memory is the same for all visitors — it is not private to you alone.</li>
+      <li><strong>Marketplace links</strong> on suggested pieces are Vinted <strong>search</strong> links only — not live listings, prices, or availability. Nothing is sent to Vinted until you click a link yourself.</li>
+      <li><strong>No selling or ad tracking:</strong> Your data is not sold. The app does not embed third-party analytics in this UI.</li>
+    </ul>
+    <p><strong>Deleting data:</strong> You can delete individual wardrobe items from the item detail panel. Saved outfits appear in history but cannot be deleted in the app yet. There is no in-app control to clear shared style memory.</p>
+    <p><strong>Demo limitation:</strong> The cookie value <code>stylescout_session=default</code> can act as a manual-test shortcut to the legacy demo wardrobe, but only when the server has <code>ALLOW_DEFAULT_OVERRIDE=true</code>. It is disabled by default, guessable, and <strong>not authentication</strong>.</p>
+    <button class="btn-sm privacy-close" type="button" onclick="closePrivacyPanel()">Close</button>
+  </div>
+</div>
+
 <div class="delete-item-dialog" id="deleteItemDialog" role="dialog" aria-modal="true" aria-labelledby="deleteItemTitle">
   <div class="delete-item-scrim"></div>
   <div class="delete-item-panel">
@@ -604,6 +656,9 @@ input{font-family:var(--font-body);}
 
     <div class="board-wrap" id="boardWrap">
       <div class="outfit-summary" id="outfitSummary" aria-live="polite"></div>
+      <div class="validation-notice-wrap" id="validationNoticeWrap" hidden>
+        <div id="validationNotice"></div>
+      </div>
       <div class="board" id="board"></div>
       <div class="outfit-empty-notice" id="outfitEmpty" hidden>
         <p id="outfitEmptyReason"></p>
@@ -613,20 +668,45 @@ input{font-family:var(--font-body);}
         <p id="whyText"></p>
         <span id="composerFooter">From the rule-based composer</span>
       </div>
+      <section class="explanation-panel" id="explanationPanel" hidden aria-label="Outfit explanation">
+        <h3>Why this outfit</h3>
+        <ul class="explanation-list" id="explanationList"></ul>
+      </section>
       <div class="session-actions">
         <button class="btn-sm btn-add" onclick="regenerate()">↻ Regenerate</button>
         <button class="btn-sm btn-add" id="saveOutfitBtn" type="button">Save outfit</button>
         <!-- TODO: Phase 2 — Wear today -->
       </div>
+      <section class="preferences-panel" id="preferencesPanel" hidden aria-label="Shopping preferences">
+        <h3>Shopping preferences</h3>
+        <p class="preferences-intro">Optional — helps tailor marketplace search links for suggested pieces. Skip anytime.</p>
+        <form class="preferences-form" id="preferencesForm">
+          <label>
+            Size
+            <input id="preferencesSize" name="size" type="text" placeholder="e.g. M" autocomplete="off">
+          </label>
+          <label>
+            Max price
+            <input id="preferencesMaxPrice" name="max_price" type="number" min="0" step="0.01" placeholder="e.g. 50">
+          </label>
+        </form>
+        <div class="preferences-actions">
+          <button class="btn-sm btn-add" type="submit" form="preferencesForm">Save preferences</button>
+          <button class="btn-sm" id="preferencesSkipBtn" type="button">Skip</button>
+        </div>
+        <p class="preferences-error" id="preferencesError" hidden></p>
+      </section>
       <div class="session-hint">Hover a piece and tap <b>⟲</b> to replace just that item — the rest of the outfit stays.</div>
     </div>
   </div>
 </div>
 
+<script src="item-provenance.js"></script>
 <script src="wardrobe-add-item.js"></script>
 <script src="wardrobe-edit-item.js"></script>
 <script src="inline-edit-swap.js"></script>
 <script src="saved-outfits.js"></script>
+<script src="preferences-form.js"></script>
 <script>
 /* ============================================================
    WARDROBE DATA — loaded from GET /api/wardrobe/items
@@ -689,6 +769,7 @@ async function loadWardrobeItems(){
 }
 
 let savedOutfitsUi=null;
+let shoppingPreferencesUi=null;
 function showWardrobeView(){
   const panel=document.getElementById('savedOutfitsPanel');
   const main=document.getElementById('wardrobeMain');
@@ -751,6 +832,10 @@ function openWardrobe(){
       hidePanel: () => {},
       isSavedPanelVisible,
     });
+    shoppingPreferencesUi=ShoppingPreferences.bind({
+      apiBaseUrl: API_BASE_URL,
+      fetchOptions: FETCH_OPTIONS,
+    });
     inlineEditSwapUi=InlineEditSwap.bind({
       apiBaseUrl: API_BASE_URL,
       getCurrentOutfit: () => currentOutfitResult?.outfit || null,
@@ -770,6 +855,13 @@ function openWardrobe(){
       setWhyText: (text) => {
         const whyEl = document.getElementById('whyText');
         if (whyEl) whyEl.textContent = text;
+      },
+      clearExplanation: () => {
+        if (currentOutfitResult) {
+          delete currentOutfitResult.explanation;
+        }
+        clearValidationNotice();
+        renderExplanation({});
       },
       fetchOptions: FETCH_OPTIONS,
     });
@@ -801,13 +893,19 @@ function filtered(){
 function render(){
   buildFilters();
   const items=filtered();
+  const IP=window.ItemProvenance;
   const heart=()=>`<svg viewBox="0 0 24 24"><path d="M12 20s-7-4.6-9-9c-1.3-3 1-7 4.6-7 2 0 3.4 1.1 4.4 2.6C13 5.1 14.4 4 16.4 4 20 4 22.3 8 21 11c-2 4.4-9 9-9 9z"/></svg>`;
-  document.getElementById('grid').innerHTML=items.map((i,idx)=>`
+  document.getElementById('grid').innerHTML=items.map((i,idx)=>{
+    const displayItem=IP?IP.wardrobeDisplayItem(i):{...i,source:'wardrobe',owned:true};
+    const badge=IP?IP.provenanceBadgeHtml(displayItem):'';
+    return `
     <div class="gcard" style="animation-delay:${Math.min(idx*55,600)}ms" onclick="openDetail('${i.id}')">
       <img src="${i.image_url}" alt="${i.name}" loading="lazy">
+      ${badge}
       <button class="fav ${favorites.has(i.id)?'on':''}" aria-label="Favorite ${i.name}" onclick="toggleFav(event,'${i.id}')">${heart()}</button>
       <div class="gtag">${i.style} · ${i.color}</div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   document.getElementById('count').textContent=`${items.length} item${items.length===1?'':'s'}`;
   document.getElementById('empty').classList.toggle('show',items.length===0);
 }
@@ -816,6 +914,8 @@ function render(){
 let detailItemId=null;
 function openDetail(id){
   const i=wardrobeItems.find(x=>x.id===id);if(!i)return;
+  const IP=window.ItemProvenance;
+  const displayItem=IP?IP.wardrobeDisplayItem(i):{...i,source:'wardrobe',owned:true};
   detailItemId=id;
   document.getElementById('dImg').src=i.image_url;
   document.getElementById('dImg').alt=i.name;
@@ -823,7 +923,7 @@ function openDetail(id){
   document.getElementById('dTags').innerHTML=`
     <span class="dtag">${i.category}</span><span class="dtag">${i.color}</span>
     <span class="dtag">${i.style}</span><span class="dtag">${i.event}</span>
-    <span class="dtag tq">yours</span>`;
+    ${IP?IP.provenanceBadgeHtml(displayItem):'<span class="provenance-badge provenance-owned">Owned</span>'}`;
   const added=new Date(i.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
   document.getElementById('dMeta').innerHTML=`id · ${i.id}<br>added · ${added}`;
   document.getElementById('detail').classList.add('show');
@@ -839,7 +939,19 @@ function styleFromDetail(){
   document.getElementById('prompt').value=i?`Use my ${i.name.toLowerCase()}`:'';
   startSession();
 }
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeDetail();closeSession();}});
+function openPrivacyPanel(){
+  document.getElementById('privacyDialog').classList.add('show');
+}
+function closePrivacyPanel(){
+  document.getElementById('privacyDialog').classList.remove('show');
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    closeDetail();
+    closeSession();
+    closePrivacyPanel();
+  }
+});
 
 /* ---------- AI console ---------- */
 function usePrompt(el){
@@ -865,25 +977,29 @@ function updateModeDescHint(){
   if(!hint) return;
   hint.innerHTML=`<strong>${MODE_LABEL[currentMode]}:</strong> ${MODE_DESC[currentMode]}`;
 }
-function provenanceLabel(item){
-  if(item.source==='wardrobe'||item.owned===true) return 'owned';
-  if(item.source==='suggested'||item.owned===false) return 'suggested';
-  return null;
+function clearValidationNotice(){
+  const wrap=document.getElementById('validationNoticeWrap');
+  const host=document.getElementById('validationNotice');
+  if(wrap) wrap.hidden=true;
+  if(host) host.innerHTML='';
 }
-function provenanceBadgeHtml(item){
-  const label=provenanceLabel(item);
-  if(label==='owned'){
-    return '<span class="provenance-badge provenance-owned">Owned</span>';
+function renderValidationNotice(outfit){
+  const wrap=document.getElementById('validationNoticeWrap');
+  const host=document.getElementById('validationNotice');
+  const IP=window.ItemProvenance;
+  if(!wrap||!host||!IP){
+    clearValidationNotice();
+    return null;
   }
-  if(label==='suggested'){
-    return '<span class="provenance-badge provenance-suggested">Suggested</span>';
+  const reason=outfit?.reason||'';
+  const kind=IP.validationNoticeKind(reason);
+  if(!kind){
+    clearValidationNotice();
+    return null;
   }
-  return '';
-}
-function shoppingLinkHtml(item){
-  if(!item?.shopping_link) return '';
-  const safeUrl=item.shopping_link.replace(/"/g,'&quot;');
-  return `<a class="shop-link-btn" href="${safeUrl}" target="_blank" rel="noopener noreferrer" aria-label="Search for ${item.name||'this item'} on Vinted" onclick="event.stopPropagation()">↗ Shop search</a>`;
+  host.innerHTML=IP.validationNoticeHtml(reason);
+  wrap.hidden=false;
+  return kind;
 }
 
 /* ============================================================
@@ -933,10 +1049,33 @@ function applyOutfitResponse(data){
 
 function buildWhyText(data){
   const parts=[];
-  if(data.outfit?.reason) parts.push(data.outfit.reason);
+  const reason=data.outfit?.reason||'';
+  const IP=window.ItemProvenance;
+  if(reason&&(!IP||!IP.validationNoticeKind(reason))){
+    parts.push(reason);
+  }
   if(data.stylist_notes) parts.push(data.stylist_notes);
   if(!parts.length&&data.message) parts.push(data.message);
   return parts.join(' ');
+}
+
+function renderExplanation(data){
+  const panel=document.getElementById('explanationPanel');
+  const list=document.getElementById('explanationList');
+  if(!panel||!list) return;
+  let lines=Array.isArray(data?.explanation)?data.explanation:[];
+  const IP=window.ItemProvenance;
+  const reason=(data?.outfit?.reason||'').trim();
+  if(IP&&reason&&IP.validationNoticeKind(reason)){
+    lines=lines.filter(line=>line.trim()!==reason);
+  }
+  if(!lines.length){
+    panel.hidden=true;
+    list.innerHTML='';
+    return;
+  }
+  list.innerHTML=lines.map(line=>`<li>${line}</li>`).join('');
+  panel.hidden=false;
 }
 
 async function requestInlineEdit(payload){
@@ -1056,22 +1195,28 @@ function runThinking(text){
       document.getElementById('outfitEmpty').hidden=false;
       document.getElementById('outfitEmptyReason').textContent=error.message;
       document.getElementById('whyText').textContent='';
+      clearValidationNotice();
+      renderExplanation({});
       document.getElementById('boardWrap').classList.add('show');
     });
 }
 
 function renderBoard(){
   const board=document.getElementById('board');
+  const IP=window.ItemProvenance;
   board.innerHTML=SLOTS.map((slot,i)=>{
     const it=sessionOutfit[slot];if(!it)return'';
     const p=SLOT_POS[i];
     const pos=`width:${p.w};height:${p.h};${p.top?`top:${p.top};`:''}${p.bottom?`bottom:${p.bottom};`:''}${p.left?`left:${p.left};`:''}${p.right?`right:${p.right};`:''}transform:rotate(${p.rot}deg);z-index:${p.z};animation-delay:${i*140}ms;`;
-    const suggested=provenanceLabel(it)==='suggested';
+    const label=IP?IP.provenanceLabel(it):null;
+    const suggested=label==='suggested';
+    const badge=IP?IP.provenanceBadgeHtml(it):'';
+    const shopLink=IP?IP.shoppingLinkHtml(it):'';
     return `
       <div class="bg-item ${suggested?'item-suggested':''}" data-slot="${slot}"
            style="${pos}background-image:url('${it.image_url}')">
-        ${provenanceBadgeHtml(it)}
-        ${shoppingLinkHtml(it)}
+        ${badge}
+        ${shopLink}
         <button class="swap-btn" aria-label="Replace ${slot}" onclick="event.stopPropagation();openSwapInput('${slot}')">⟲</button>
         <span class="slot-tag">${it.name||slot}</span>
       </div>`;
@@ -1088,19 +1233,28 @@ function revealBoard(data){
   const whyEl=document.getElementById('whyText');
 
   summaryEl.textContent=`Generated with ${MODE_LABEL[currentMode]}`;
+  renderValidationNotice(outfit);
 
   if(items.length===0){
     boardEl.innerHTML='';
     emptyEl.hidden=false;
+    const emptyReason=outfit.reason||buildWhyText(payload)||'No items matched this request.';
     document.getElementById('outfitEmptyReason').textContent=
-      outfit.reason||buildWhyText(payload)||'No items matched this request.';
+      window.ItemProvenance?.validationNoticeKind(outfit.reason)
+        ? 'No items matched this request.'
+        : emptyReason;
     whyEl.textContent='';
+    renderExplanation(payload);
   }else{
     emptyEl.hidden=true;
     renderBoard();
     whyEl.textContent=buildWhyText(payload);
+    renderExplanation(payload);
   }
   document.getElementById('boardWrap').classList.add('show');
+  if(shoppingPreferencesUi&&items.length>0){
+    shoppingPreferencesUi.showAfterOutfit(outfit);
+  }
 }
 
 /* Inline Edit Agent: replace one slot via free-text instruction */
@@ -1123,6 +1277,7 @@ function regenerate(){
 function closeSession(){
   const s=document.getElementById('session');
   s.classList.remove('in');
+  clearValidationNotice();
   setTimeout(()=>s.classList.remove('show'),400);
 }
 updateModeDescHint();

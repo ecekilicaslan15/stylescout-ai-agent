@@ -1,29 +1,33 @@
 from agents.inline_edit_agent import InlineEditAgent
-from agents.memory_agent import MemoryAgent
 from agents.planner import plan_user_request
-from agents.sewing_agent import SewingAgent
-from agents.shopping_agent import ShoppingAgent
 from agents.stylist_agent import StylistAgent
-from agents.trend_agent import TrendAgent
-from agents.wardrobe_agent import WardrobeAgent
 from context.context_builder import ContextBuilder
-from memory.memory_manager import load_memory
+from memory.memory_manager import load_memory, update_memory_from_plan
 from models.agent_response import AgentResponse
 from models.plan import plan_to_dict
 from models.styling_mode import DEFAULT_STYLING_MODE, StylingMode
+from services.preference_service import load_preferences
+from services.wardrobe_matching_service import WardrobeMatchingService
 from wardrobe.repository_factory import create_wardrobe_repository
 from wardrobe.wardrobe_repository import WardrobeRepository
 
 # Ordered agent sequence per intent. Multiple agents run left-to-right.
 INTENT_AGENT_SEQUENCE: dict[str, list[str]] = {
-    "memory_update": ["memory_agent"],
     "outfit_request": ["stylist_agent"],
-    "outfit_request_with_memory_update": ["memory_agent", "stylist_agent"],
+    "outfit_request_with_memory_update": ["stylist_agent"],
     "inline_edit": ["inline_edit_agent"],
-    "sewing_request": ["sewing_agent"],
-    "trend_request": ["trend_agent"],
-    "shopping_request": ["shopping_agent"],
 }
+
+MEMORY_SAVED_MESSAGE = "Got it. I saved this preference to your style memory."
+SEWING_STUB_MESSAGE = (
+    "SewingAgent is not connected yet. "
+    "Alteration and sewing help will be available in a future release."
+)
+TREND_STUB_MESSAGE = (
+    "TrendAgent is not connected yet. "
+    "Trend recommendations will be available in a future release."
+)
+SHOPPING_NO_ITEM_MESSAGE = "Provide an item to generate marketplace search links."
 
 
 class FashionOrchestrator:
@@ -31,15 +35,10 @@ class FashionOrchestrator:
 
     def __init__(self, wardrobe_repository: WardrobeRepository | None = None) -> None:
         self._wardrobe_repository = wardrobe_repository or create_wardrobe_repository()
-        wardrobe_agent = WardrobeAgent(wardrobe_repository=self._wardrobe_repository)
+        wardrobe_matching = WardrobeMatchingService(wardrobe_repository=self._wardrobe_repository)
         agents = [
-            MemoryAgent(),
             StylistAgent(wardrobe_repository=self._wardrobe_repository),
-            InlineEditAgent(wardrobe_agent=wardrobe_agent),
-            wardrobe_agent,
-            SewingAgent(),
-            TrendAgent(),
-            ShoppingAgent(),
+            InlineEditAgent(wardrobe_matching=wardrobe_matching),
         ]
         self.agents = agents
         self.registry = {agent.name: agent for agent in agents}
@@ -67,14 +66,17 @@ class FashionOrchestrator:
     def run(self, user_input: str, mode: StylingMode = DEFAULT_STYLING_MODE) -> dict:
         plan = plan_user_request(user_input, mode=mode)
         plan_dict = plan_to_dict(plan)
+        intent = plan_dict.get("intent", "outfit_request")
         memory = load_memory()
         wardrobe = self._wardrobe_repository.get_all()
+        preferences = load_preferences(self._wardrobe_repository.user_id)
 
         context_builder = ContextBuilder()
         context = context_builder.build(
             user_input=user_input,
             plan=plan,
             memory=memory,
+            preferences=preferences,
             current_outfit=[],
             selected_item=None,
             wardrobe=wardrobe,
@@ -85,6 +87,45 @@ class FashionOrchestrator:
         outfit = None
         message = None
         stylist_notes = None
+
+        if intent in {"memory_update", "outfit_request_with_memory_update"}:
+            memory = update_memory_from_plan(plan)
+            context.memory = memory
+            if intent == "memory_update":
+                return {
+                    "plan": plan,
+                    "memory": memory,
+                    "outfit": None,
+                    "message": MEMORY_SAVED_MESSAGE,
+                    "stylist_notes": None,
+                }
+
+        if intent == "sewing_request":
+            return {
+                "plan": plan,
+                "memory": memory,
+                "outfit": None,
+                "message": SEWING_STUB_MESSAGE,
+                "stylist_notes": None,
+            }
+
+        if intent == "trend_request":
+            return {
+                "plan": plan,
+                "memory": memory,
+                "outfit": None,
+                "message": TREND_STUB_MESSAGE,
+                "stylist_notes": None,
+            }
+
+        if intent == "shopping_request":
+            return {
+                "plan": plan,
+                "memory": memory,
+                "outfit": None,
+                "message": SHOPPING_NO_ITEM_MESSAGE,
+                "stylist_notes": None,
+            }
 
         for agent_name in self._resolve_agent_names(plan_dict):
             agent = self.registry[agent_name]
@@ -128,12 +169,14 @@ class FashionOrchestrator:
         plan_dict = {"intent": "inline_edit"}
         memory = load_memory()
         wardrobe = self._wardrobe_repository.get_all()
+        preferences = load_preferences(self._wardrobe_repository.user_id)
 
         context_builder = ContextBuilder()
         context = context_builder.build(
             user_input=instruction,
             plan=plan_dict,
             memory=memory,
+            preferences=preferences,
             current_outfit=self._outfit_items(current_outfit),
             selected_item=target_item,
             wardrobe=wardrobe,

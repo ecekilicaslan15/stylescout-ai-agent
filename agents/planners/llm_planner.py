@@ -1,5 +1,5 @@
 from models.plan import Plan
-from models.styling_mode import StylingMode
+from models.styling_mode import DEFAULT_STYLING_MODE, StylingMode
 from agents.planners.base import Planner
 
 
@@ -23,7 +23,7 @@ class LLMPlanner(Planner):
         #   self.client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
         pass
 
-    def plan(self, user_input: str, mode: StylingMode | None = None) -> Plan:
+    def plan(self, user_input: str, mode: StylingMode = DEFAULT_STYLING_MODE) -> Plan:
         """
         Simulate LLM planning with lightweight keyword rules.
 
@@ -32,7 +32,6 @@ class LLMPlanner(Planner):
         2. Call OpenAI chat completions with JSON response format
         3. Parse the JSON payload into a ``Plan`` instance
         """
-        # TODO: mode policy will move into planner in a dedicated follow-up ticket (see DECISIONS.md correction row)
         text = user_input.lower()
 
         # Start from defaults — same as what a parsed JSON response would
@@ -57,4 +56,4 @@ class LLMPlanner(Planner):
         #   raw = json.loads(response.choices[0].message.content)
         #   return Plan(intent=raw.get("intent", "outfit_request"), ...)
 
-        return plan
+        return plan.apply_styling_mode(mode)

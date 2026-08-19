@@ -18,9 +18,12 @@ from pydantic import BaseModel, Field, field_validator
 from api.session import LEGACY_USER_ID, get_session_user_id
 from memory.memory_store import update_memory_from_input
 from models.plan import Plan, plan_to_dict
+from models.preferences import PreferenceProfile
 from models.styling_mode import DEFAULT_STYLING_MODE, StylingMode
 from orchestrator.fashion_orchestrator import run_fashion_agent, run_inline_edit
+from services.outfit_validator import OutfitValidator
 from services.pipeline_trace import get_pipeline_trace_labels
+from services.preference_service import load_preferences, save_preferences
 from services.saved_outfits_service import SavedOutfitsService, create_user_wardrobe_repository
 from services.shopping_service import ShoppingService
 from wardrobe.category_images import resolve_item_image_url
@@ -533,7 +536,11 @@ def serialize_outfit_item(item: dict, wardrobe_by_category: dict[str, list[dict]
 SHOPPING_LINK_MODES = frozenset({StylingMode.WARDROBE_PLUS_AI, StylingMode.AI_INSPIRATION})
 
 
-def _attach_shopping_links(items: list[dict], mode: StylingMode) -> list[dict]:
+def _attach_shopping_links(
+    items: list[dict],
+    mode: StylingMode,
+    preferences: dict | None = None,
+) -> list[dict]:
     """Add shopping_link only for suggested items in Mode 2/3."""
     if mode not in SHOPPING_LINK_MODES:
         return items
@@ -543,7 +550,10 @@ def _attach_shopping_links(items: list[dict], mode: StylingMode) -> list[dict]:
     for item in items:
         row = dict(item)
         if row.get("source") == "suggested" and row.get("owned") is False:
-            row["shopping_link"] = shopping_service.primary_shopping_link(row)
+            row["shopping_link"] = shopping_service.primary_shopping_link(
+                row,
+                preferences=preferences,
+            )
         enriched.append(row)
     return enriched
 
@@ -560,7 +570,10 @@ def serialize_fashion_agent_result(
 
     outfit = result.get("outfit")
     outfit_payload = None
+    explanation: list[str] = []
+    preferences = load_preferences(service.user_id)
     if outfit:
+        explanation = list(outfit.get("explanation") or [])
         wardrobe_items = service.list_items()
         wardrobe_by_category = _index_wardrobe_by_category(wardrobe_items)
         serialized_items = [
@@ -573,8 +586,10 @@ def serialize_fashion_agent_result(
             "city": outfit.get("city"),
             "date": outfit.get("date"),
             "reason": outfit.get("reason"),
-            "items": _attach_shopping_links(serialized_items, mode),
+            "items": _attach_shopping_links(serialized_items, mode, preferences=preferences),
         }
+        if outfit.get("missing_slots"):
+            outfit_payload["missing_slots"] = outfit.get("missing_slots")
 
     message = result.get("message") or ""
     if outfit_payload and outfit_payload.get("items") and not message:
@@ -584,6 +599,7 @@ def serialize_fashion_agent_result(
         "message": message,
         "plan": plan_payload,
         "outfit": outfit_payload,
+        "explanation": explanation,
         "memory": result.get("memory"),
         "stylist_notes": result.get("stylist_notes"),
         "wardrobe_update": wardrobe_update,
@@ -733,6 +749,23 @@ def pipeline_trace_labels() -> dict:
     return get_pipeline_trace_labels()
 
 
+@app.get("/api/preferences")
+def get_preferences(user_id: str = Depends(get_session_user_id)) -> dict:
+    """Return shopping preferences for the current session user."""
+    return load_preferences(user_id)
+
+
+@app.post("/api/preferences")
+def update_preferences(
+    request: PreferenceProfile,
+    user_id: str = Depends(get_session_user_id),
+) -> dict:
+    """Save shopping preferences for the current session user."""
+    payload = request.model_dump(exclude_unset=True)
+    stored = {key: value for key, value in payload.items() if value is not None}
+    return save_preferences(user_id, stored)
+
+
 @app.post("/api/outfits")
 def create_outfit(
     request: OutfitRequest,
@@ -756,6 +789,18 @@ def create_outfit(
         mode=request.mode,
         wardrobe_repository=wardrobe_repository,
     )
+
+    outfit = result.get("outfit")
+    if outfit:
+        wardrobe_snapshot = wardrobe_repository.get_by_category()
+        result["outfit"] = OutfitValidator.validate_and_finalize(
+            outfit,
+            wardrobe_snapshot,
+            request.mode,
+            plan=result.get("plan"),
+            memory=result.get("memory") or {},
+        )
+
     return serialize_fashion_agent_result(result, wardrobe_update, service, mode=request.mode)
 
 

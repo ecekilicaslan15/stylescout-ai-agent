@@ -9,7 +9,7 @@ from agents.base_agent import BaseAgent
 from memory.memory_manager import load_memory
 from models.agent_context import AgentContext
 from models.agent_response import AgentResponse
-from models.plan import Plan
+from models.plan import Plan, plan_from_dict
 from models.styling_mode import DEFAULT_STYLING_MODE, StylingMode
 from services.rag_service import RagService
 from services.stylist_notes_builder import build_knowledge_query, build_stylist_notes
@@ -76,11 +76,28 @@ def _build_wardrobe_identity_set(wardrobe: dict) -> set[tuple]:
     return keys
 
 
-def _resolve_inspiration_ownership(item: dict, wardrobe: dict) -> dict:
-    """Annotate a catalogue item as owned when it matches the wardrobe snapshot."""
+def resolve_inspiration_ownership(item: dict, wardrobe: dict) -> dict:
+    """Post-generation ownership resolver for ai_inspiration mode.
+
+    Separated so sub-task B (full validation gate) can invoke it independently.
+    """
     if wardrobe_item_key(item) in _build_wardrobe_identity_set(wardrobe):
         return _with_provenance(item, source="wardrobe", owned=True)
     return _with_provenance(item, source="suggested", owned=False)
+
+
+def _mode_from_plan(plan: Plan) -> StylingMode:
+    if plan.wardrobe_optional:
+        return StylingMode.AI_INSPIRATION
+    if plan.allow_external:
+        return StylingMode.WARDROBE_PLUS_AI
+    return StylingMode.MY_WARDROBE
+
+
+def _coerce_plan(plan) -> Plan:
+    if isinstance(plan, Plan):
+        return plan
+    return plan_from_dict(plan)
 
 
 def _with_provenance(item: dict, *, source: str, owned: bool) -> dict:
@@ -288,10 +305,18 @@ def generate_outfit(
     plan,
     memory: dict,
     wardrobe: dict | None = None,
-    mode: StylingMode = DEFAULT_STYLING_MODE,
+    mode: StylingMode | None = None,
 ) -> dict:
+    plan_obj = _coerce_plan(plan)
+    if mode is not None:
+        plan_obj.apply_styling_mode(mode)
+
     if wardrobe is None:
         wardrobe = load_wardrobe()
+
+    effective_mode = _mode_from_plan(plan_obj)
+    allow_external = plan_obj.allow_external
+    wardrobe_optional = plan_obj.wardrobe_optional
 
     favorite_colors = memory.get("favorite_colors", [])
     preferred_styles = memory.get("preferred_styles", [])
@@ -302,12 +327,30 @@ def generate_outfit(
     wardrobe_count = 0
     suggested_count = 0
 
-    if mode == StylingMode.WARDROBE_PLUS_AI:
+    if wardrobe_optional:
+        for category in OUTFIT_CATEGORIES:
+            inspiration_item = _pick_suggested_item(
+                category,
+                plan_obj,
+                favorite_colors,
+                preferred_styles,
+                disliked_items,
+            )
+            if not inspiration_item:
+                continue
+
+            annotated = resolve_inspiration_ownership(inspiration_item, wardrobe)
+            selected_items.append(annotated)
+            if annotated["owned"]:
+                wardrobe_count += 1
+            else:
+                suggested_count += 1
+    elif allow_external:
         for category in OUTFIT_CATEGORIES:
             wardrobe_item = _pick_wardrobe_item(
                 wardrobe,
                 category,
-                plan,
+                plan_obj,
                 favorite_colors,
                 preferred_styles,
                 disliked_items,
@@ -324,7 +367,7 @@ def generate_outfit(
 
             suggested_item = _pick_suggested_item(
                 category,
-                plan,
+                plan_obj,
                 favorite_colors,
                 preferred_styles,
                 disliked_items,
@@ -334,30 +377,12 @@ def generate_outfit(
                     _with_provenance(suggested_item, source="suggested", owned=False)
                 )
                 suggested_count += 1
-    elif mode == StylingMode.AI_INSPIRATION:
-        for category in OUTFIT_CATEGORIES:
-            inspiration_item = _pick_suggested_item(
-                category,
-                plan,
-                favorite_colors,
-                preferred_styles,
-                disliked_items,
-            )
-            if not inspiration_item:
-                continue
-
-            annotated = _resolve_inspiration_ownership(inspiration_item, wardrobe)
-            selected_items.append(annotated)
-            if annotated["owned"]:
-                wardrobe_count += 1
-            else:
-                suggested_count += 1
     else:
         for category in OUTFIT_CATEGORIES:
             wardrobe_item = _pick_wardrobe_item(
                 wardrobe,
                 category,
-                plan,
+                plan_obj,
                 favorite_colors,
                 preferred_styles,
                 disliked_items,
@@ -370,18 +395,18 @@ def generate_outfit(
             )
             wardrobe_count += 1
 
-    reason = _build_outfit_reason(mode, wardrobe_count, suggested_count)
+    reason = _build_outfit_reason(effective_mode, wardrobe_count, suggested_count)
 
     outfit = {
-        "event": plan.event,
-        "style": plan.style,
-        "city": plan.city,
-        "date": plan.date,
+        "event": plan_obj.event,
+        "style": plan_obj.style,
+        "city": plan_obj.city,
+        "date": plan_obj.date,
         "items": selected_items,
         "reason": reason,
     }
 
-    if mode == StylingMode.MY_WARDROBE and selected_items and wardrobe_identities:
+    if not wardrobe_optional and not allow_external and selected_items and wardrobe_identities:
         for item in selected_items:
             if item.get("source") != "wardrobe" or item.get("owned") is not True:
                 raise RuntimeError(
@@ -392,6 +417,7 @@ def generate_outfit(
                     f"my_wardrobe outfit item {item.get('name')!r} is not in the wardrobe snapshot"
                 )
 
+    # Validated in api/main.py via OutfitValidator after generation (SCOUT-002 sub-task B).
     return outfit
 
 
@@ -433,11 +459,12 @@ class StylistAgent(BaseAgent):
             user_input, plan, context
         )
 
+        plan_obj.apply_styling_mode(mode)
+
         outfit = generate_outfit(
             plan=plan_obj,
             memory=memory,
             wardrobe=wardrobe,
-            mode=mode,
         )
 
         stylist_notes = self._retrieve_stylist_notes(query_input, plan_obj)

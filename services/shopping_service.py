@@ -49,6 +49,10 @@ def build_search_query(spec: SearchSpec) -> str:
     """Compose a deterministic keyword query from spec fields."""
     category_term = CATEGORY_QUERY_TERMS.get(spec.category, spec.category)
     parts = [spec.color, spec.style, category_term, spec.name]
+    if spec.size:
+        parts.append(f"size {spec.size}")
+    if spec.max_price is not None:
+        parts.append(f"under {spec.max_price:g}")
     return " ".join(part for part in parts if part).strip()
 
 
@@ -58,20 +62,20 @@ class ShoppingService:
     def __init__(self, providers: list[DeepLinkProvider] | None = None) -> None:
         self._providers = providers or [VintedDeepLinkProvider()]
 
-    def build_search_spec(self, item: dict) -> SearchSpec:
-        return build_search_spec(item)
+    def build_search_spec(self, item: dict, preferences: dict | None = None) -> SearchSpec:
+        return build_search_spec(item, preferences=preferences)
 
     def build_deep_links(self, spec: SearchSpec) -> dict[str, str]:
         return {provider.provider_id: provider.build_search_url(spec) for provider in self._providers}
 
-    def primary_shopping_link(self, item: dict) -> str:
-        spec = self.build_search_spec(item)
+    def primary_shopping_link(self, item: dict, preferences: dict | None = None) -> str:
+        spec = self.build_search_spec(item, preferences=preferences)
         links = self.build_deep_links(spec)
         return links.get("vinted") or next(iter(links.values()))
 
-    def enrich_suggested_item(self, item: dict) -> dict:
+    def enrich_suggested_item(self, item: dict, preferences: dict | None = None) -> dict:
         """Attach shopping_link to a copy of item when it is suggested/unowned."""
         enriched = dict(item)
         if enriched.get("source") == "suggested" and enriched.get("owned") is False:
-            enriched["shopping_link"] = self.primary_shopping_link(enriched)
+            enriched["shopping_link"] = self.primary_shopping_link(enriched, preferences=preferences)
         return enriched

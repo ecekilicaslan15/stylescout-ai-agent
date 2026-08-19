@@ -1,9 +1,9 @@
 from agents.base_agent import BaseAgent
 from agents.inline_edit_config import InlineEditCriteria, parse_inline_edit_instruction
-from agents.wardrobe_agent import WardrobeAgent
 from context.runtime_helpers import resolve_memory
 from models.agent_context import AgentContext
 from models.agent_response import AgentResponse
+from services.wardrobe_matching_service import WardrobeMatchingService
 
 
 def _resolve_inline_edit_fields(
@@ -36,8 +36,8 @@ class InlineEditAgent(BaseAgent):
     name = "inline_edit_agent"
     description = "Edits a single outfit item based on a short instruction."
 
-    def __init__(self, wardrobe_agent: WardrobeAgent | None = None) -> None:
-        self._wardrobe_agent = wardrobe_agent or WardrobeAgent()
+    def __init__(self, wardrobe_matching: WardrobeMatchingService | None = None) -> None:
+        self._wardrobe_matching = wardrobe_matching or WardrobeMatchingService()
 
     def can_handle(self, plan: dict) -> bool:
         return plan.get("intent") == "inline_edit"
@@ -96,7 +96,7 @@ class InlineEditAgent(BaseAgent):
                 error="unrecognized_instruction",
             )
 
-        wardrobe_response = self._wardrobe_agent.find_replacement(
+        wardrobe_response = self._wardrobe_matching.find_replacement(
             target_item=target_item,
             target_style=criteria.target_style,
             memory=memory,

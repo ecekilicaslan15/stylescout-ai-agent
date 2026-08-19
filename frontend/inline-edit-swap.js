@@ -13,6 +13,7 @@
       updateOutfitFromResponse,
       renderBoard,
       setWhyText,
+      clearExplanation,
       fetchOptions = { credentials: "include" },
     } = config;
 
@@ -111,6 +112,7 @@
         }
 
         if (body.message) setWhyText(body.message);
+        if (typeof clearExplanation === "function") clearExplanation();
         closeSwapInput();
         renderBoard();
       } catch (error) {

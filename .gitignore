@@ -1,5 +1,6 @@
 # Virtual environment
 .venv/
+venv/
 
 # Python cache
 __pycache__/
@@ -9,20 +10,27 @@ __pycache__/
 # macOS
 .DS_Store
 
-# VS Code
+# IDE
 .vscode/
+.idea/
 
 # Streamlit cache
 .streamlit/
 
-# Environment variables
+# Environment variables (never commit secrets — .env.example is tracked)
 .env
 
 # Local SQLite wardrobe databases
 *.db
 *.sqlite
 *.sqlite3
-.venv*
-venv/
-.venv*
-venv/
+
+# Runtime / session-generated data (not seed)
+memory/memory_store.json
+wardrobe/saved_outfits.json
+wardrobe/preferences.json
+data/
+eval/.scratch/
+
+# Node (if added later)
+node_modules/

@@ -1,5 +1,5 @@
 from models.plan import Plan
-from models.styling_mode import StylingMode
+from models.styling_mode import DEFAULT_STYLING_MODE, StylingMode
 from agents.planners.base import Planner
 from agents.detectors.color_detector import detect_colors
 from agents.detectors.date_detector import detect_date
@@ -24,8 +24,7 @@ class RuleBasedPlanner(Planner):
     and requires no external API calls.
     """
 
-    def plan(self, user_input: str, mode: StylingMode | None = None) -> Plan:
-        # TODO: mode policy will move into planner in a dedicated follow-up ticket (see DECISIONS.md correction row)
+    def plan(self, user_input: str, mode: StylingMode = DEFAULT_STYLING_MODE) -> Plan:
         text = user_input.lower()
         plan = Plan()
 
@@ -37,4 +36,4 @@ class RuleBasedPlanner(Planner):
         plan.disliked_items = detect_disliked_items(text)
         plan.intent = detect_intent(text)
 
-        return plan
+        return plan.apply_styling_mode(mode)

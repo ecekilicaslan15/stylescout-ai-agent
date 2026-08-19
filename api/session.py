@@ -2,14 +2,27 @@
 
 from __future__ import annotations
 
+import os
 import re
 import uuid
 
+from dotenv import load_dotenv
 from fastapi import Request, Response
+
+load_dotenv()
 
 SESSION_COOKIE_NAME = "stylescout_session"
 LEGACY_USER_ID = "default"
+ALLOW_DEFAULT_OVERRIDE_ENV = "ALLOW_DEFAULT_OVERRIDE"
 SESSION_ID_PATTERN = re.compile(r"^sess_[0-9a-f]{32}$")
+
+_TRUTHY = frozenset({"1", "true", "yes", "on"})
+
+
+def allow_default_override() -> bool:
+    """Return True when the legacy `default` cookie shortcut is explicitly enabled."""
+    raw = (os.getenv(ALLOW_DEFAULT_OVERRIDE_ENV) or "").strip().lower()
+    return raw in _TRUTHY
 
 
 def generate_session_id() -> str:
@@ -18,9 +31,9 @@ def generate_session_id() -> str:
 
 
 def is_valid_session_id(session_id: str) -> bool:
-    """Accept anonymous sessions and the untouched legacy default user."""
+    """Accept anonymous sessions and optionally the legacy default user."""
     if session_id == LEGACY_USER_ID:
-        return True
+        return allow_default_override()
     return bool(SESSION_ID_PATTERN.match(session_id))
 
 

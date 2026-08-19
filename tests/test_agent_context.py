@@ -5,9 +5,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from agents.inline_edit_agent import InlineEditAgent
-from agents.memory_agent import MemoryAgent
 from agents.stylist_agent import StylistAgent
 from context.context_builder import ContextBuilder
+from memory.memory_manager import update_memory_from_plan
 from models.agent_context import AgentContext
 from models.agent_response import AgentResponse
 from models.plan import Plan, plan_to_dict
@@ -165,14 +165,9 @@ class TestOrchestratorContextFlow:
         stylist_memories: list[dict] = []
         call_order: list[str] = []
 
-        def memory_run(self, user_input, plan, context=None):
-            call_order.append("memory_agent")
-            return AgentResponse(
-                success=True,
-                agent_name="memory_agent",
-                message="saved",
-                data={"memory": updated_memory},
-            )
+        def memory_run(plan):
+            call_order.append("memory_service")
+            return updated_memory
 
         def stylist_run(self, user_input, plan, context=None):
             call_order.append("stylist_agent")
@@ -187,7 +182,10 @@ class TestOrchestratorContextFlow:
         mock_repository = MagicMock(spec=JsonWardrobeRepository)
         mock_repository.get_all.return_value = []
 
-        with patch.object(MemoryAgent, "run", memory_run):
+        with patch(
+            "orchestrator.fashion_orchestrator.update_memory_from_plan",
+            side_effect=memory_run,
+        ):
             with patch.object(StylistAgent, "run", stylist_run):
                 with patch(
                     "orchestrator.fashion_orchestrator.plan_user_request",
@@ -206,7 +204,7 @@ class TestOrchestratorContextFlow:
                         ).run("I love purple elegant outfits")
 
         mock_repository.get_all.assert_called_once()
-        assert call_order == ["memory_agent", "stylist_agent"]
+        assert call_order == ["memory_service", "stylist_agent"]
         assert stylist_memories[0]["favorite_colors"] == ["purple"]
         assert result["memory"]["favorite_colors"] == ["purple"]
 

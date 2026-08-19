@@ -23,5 +23,5 @@ On free hosting tiers the SQLite file may not persist across container restarts;
 Each browser gets an httpOnly `stylescout_session` cookie (`sess_<uuid>`). That value is used as `user_id` for wardrobe items and saved outfits, so returning visitors see their data after refresh **in the same browser**.
 
 - No login or accounts in MVP.
-- The legacy `default` user in `wardrobe.json` is kept for manual API testing only (`Cookie: stylescout_session=default`).
+- The legacy `default` user in `wardrobe.json` is kept for manual API testing only when `ALLOW_DEFAULT_OVERRIDE=true` (see `.env.example`). By default that cookie shortcut is **disabled**; unset or `false` issues a normal `sess_<uuid>` session instead.
 - **Ephemeral filesystem risk:** on free PaaS tiers without a persistent disk, SQLite/JSON files may be wiped on redeploy or cold start. Session cookies survive in the browser, but server-side data may not. Acceptable for MVP; use a persistent volume in production if you need durable multi-visit storage.
