@@ -1,5 +1,7 @@
 # StyleScout
 
+![Tests](https://github.com/ecekilicaslan15/stylescout-ai-agent/actions/workflows/tests.yml/badge.svg)
+
 AI-powered Fashion Agent
 
 ## Features
