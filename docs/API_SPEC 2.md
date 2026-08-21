@@ -1,6 +1,6 @@
 # StyleScout — API specification
 
-Base URL: local `http://localhost:8000` · production **https://stylescout-c8c6.onrender.com**
+Base URL: local `http://localhost:8000` · production **[live URL — pending Render verification, see docs/DECISIONS.md SCOUT-017 row]**
 
 All `/api/*` routes that persist user data require the **`stylescout_session`** httpOnly cookie (issued automatically). Browser clients must use `credentials: 'include'`.
 

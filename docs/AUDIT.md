@@ -74,7 +74,7 @@ Source: `frontend/index.html`. Clickable / interactive controls.
 | Rail Style me | 360 | **Local** — `focusPrompt()` scroll |
 | Rail Profile | — | **Hidden** (TODO Phase 3) |
 | Rail Settings | — | **Hidden** (TODO Phase 3) |
-| «+ Add item» | — | **Hidden** (TODO Phase 2) |
+| «+ Add item» | — | **Hidden** (TODO Phase 2) — was visible live without working POST on 2026-08-21; re-hidden same day |
 | Prompt input + Enter | 379 | **API** — `startSession()` → `POST /api/outfits` |
 | Prompt send (✦) | 380 | **API** — same |
 | Example chips (×5) | 386–390 | **Local** — `usePrompt()` fills text; send required for API |

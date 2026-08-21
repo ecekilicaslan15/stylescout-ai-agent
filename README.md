@@ -4,7 +4,7 @@
 
 **StyleScout** is a portfolio demo of a wardrobe-aware outfit assistant: users manage a personal wardrobe, request outfits in three styling modes, see which pieces they own vs which are suggested gap-fill, and get **marketplace search deep-links** (not product listings or prices) for suggested items.
 
-**Live demo:** [live URL — pending Render verification, see docs/DECISIONS.md SCOUT-017 row]
+**Live demo:** https://stylescout-c8c6.onrender.com
 
 ---
 

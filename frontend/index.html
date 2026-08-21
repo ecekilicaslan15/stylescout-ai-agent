@@ -458,7 +458,8 @@ input{font-family:var(--font-body);}
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <button class="btn-sm privacy-link" id="privacyLinkBtn" type="button" onclick="openPrivacyPanel()">Data &amp; privacy</button>
-        <button class="btn-sm btn-add" id="addItemBtn" type="button">+ Add item</button>
+        <!-- TODO: Phase 2 — Add wardrobe item (POST /api/wardrobe/items) -->
+        <button class="btn-sm btn-add" id="addItemBtn" type="button" hidden>+ Add item</button>
       </div>
     </header>
 
@@ -513,7 +514,8 @@ input{font-family:var(--font-body);}
       <div class="empty-illust"><span class="eh e1"></span><span class="eh e2"></span><span class="eh e3"></span></div>
       <h3>Your closet is waiting</h3>
       <p>No pieces match here yet. Add your first item and StyleScout starts learning your wardrobe.</p>
-      <button class="btn-sm btn-add" id="addItemEmptyBtn" type="button">+ Add your first piece</button>
+      <!-- TODO: Phase 2 — Add wardrobe item (POST /api/wardrobe/items) -->
+      <button class="btn-sm btn-add" id="addItemEmptyBtn" type="button" hidden>+ Add your first piece</button>
     </div>
   </main>
 
