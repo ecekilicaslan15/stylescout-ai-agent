@@ -29,6 +29,8 @@ from wardrobe.wardrobe_service import WardrobeService
 EVAL_DIR = Path(__file__).resolve().parent
 FIXTURES_PATH = EVAL_DIR / "fixtures.json"
 DEFAULT_REPORT_PATH = EVAL_DIR / "report.md"
+# Only applied in the harness when USE_LLM=true — keeps Gemini under ~20 req/min.
+LLM_EVAL_REQUEST_DELAY_SECONDS = 3.5
 
 PARTIAL_TOP = {
     "id": "eval_partial_top",
@@ -355,18 +357,35 @@ def run_evaluation(
     fixtures_path: Path | None = None,
     storage_dir: Path | None = None,
 ) -> dict[str, Any]:
+    from agents.planner import (
+        llm_plan_error_count,
+        llm_rate_limited_count,
+        reset_planner_observability,
+        use_llm_enabled,
+    )
+
     fixtures = load_fixtures(fixtures_path)
     report_target = report_path or DEFAULT_REPORT_PATH
     work_dir = storage_dir or (EVAL_DIR / ".scratch")
     work_dir.mkdir(parents=True, exist_ok=True)
 
+    reset_planner_observability()
+    use_llm = use_llm_enabled()
+    delay_s = LLM_EVAL_REQUEST_DELAY_SECONDS if use_llm else 0.0
+
     session_id = generate_session_id()
     results: list[FixtureResult] = []
-    for fixture in fixtures:
+    for index, fixture in enumerate(fixtures):
+        if delay_s and index > 0:
+            time.sleep(delay_s)
         results.append(_run_fixture(fixture, storage_dir=work_dir, session_id=session_id))
 
     summary = _summarize(results)
     summary["fixture_count"] = len(results)
+    summary["use_llm"] = use_llm
+    summary["llm_plan_error_count"] = llm_plan_error_count()
+    summary["llm_rate_limited_count"] = llm_rate_limited_count()
+    summary["inter_request_delay_s"] = delay_s
     report_md = _render_report(results, summary)
     report_target.parent.mkdir(parents=True, exist_ok=True)
     report_target.write_text(report_md, encoding="utf-8")
@@ -413,6 +432,9 @@ def _summarize(results: list[FixtureResult]) -> dict[str, Any]:
             path: len([r for r in results if r.validation_path == path])
             for path in sorted({r.validation_path for r in results if r.validation_path})
         },
+        "repair_attempt_count": len(
+            [r for r in results if r.validation_path in {"repair", "fallback"}]
+        ),
     }
 
 
@@ -446,6 +468,7 @@ def _render_report(results: list[FixtureResult], summary: dict[str, Any]) -> str
             f"| p50 latency (ms, in-process) | {summary['p50_latency_ms']:.2f} |",
             "",
             f"Fixtures run: {summary['fixture_count']}",
+            f"USE_LLM: {summary.get('use_llm', False)}",
             "",
             "### Validation paths observed",
             "",
@@ -453,6 +476,17 @@ def _render_report(results: list[FixtureResult], summary: dict[str, Any]) -> str
     )
     for path, count in summary["validation_paths"].items():
         lines.append(f"- `{path}`: {count} fixture(s)")
+    if summary.get("use_llm"):
+        lines.extend(
+            [
+                "",
+                "### LLM planner observability (this run)",
+                "",
+                f"- Plan-level JSON failures (`llm_plan_error_count`): {summary.get('llm_plan_error_count', 0)}",
+                f"- Rate-limit fallbacks after retry (`llm_rate_limited_count`): {summary.get('llm_rate_limited_count', 0)}",
+                f"- Inter-request delay: {summary.get('inter_request_delay_s', 0)}s (harness-only)",
+            ]
+        )
 
     if summary["mode1_failures"]:
         lines.extend(

@@ -613,6 +613,7 @@ def serialize_fashion_agent_result(
         "memory": result.get("memory"),
         "stylist_notes": result.get("stylist_notes"),
         "wardrobe_update": wardrobe_update,
+        "pipeline_trace": get_pipeline_trace_labels(),
     }
 
 

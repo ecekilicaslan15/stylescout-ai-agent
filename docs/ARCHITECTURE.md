@@ -147,6 +147,8 @@ sequenceDiagram
 | Shopping links | **`ShoppingService`** builds Vinted **search URLs** from `SearchSpec` | No product API |
 | OpenRouter client | **`services/llm_client.py` exists but unused** in HTTP path | Would need explicit wiring + `USE_LLM=True` |
 
+**Plan-level vs outfit-level failure:** These are two different fallbacks. If `LLMPlanner` cannot parse Gemini JSON, `plan_user_request` immediately substitutes `RuleBasedPlanner` — there is **no repair attempt** at the plan layer, and pipeline trace labels for that request say rule-based (not LLM). If the composed **outfit** later fails `OutfitValidator`, that is a separate path: exactly **one** deterministic `_repair_outfit` pass, then fallback to the rule-based composer forced to `MY_WARDROBE`. Trace copy is sourced only from `services/pipeline_trace.py` and follows whichever planner actually produced the `Plan`.
+
 **Bottom line:** 100% of live `POST /api/outfits` traffic is deterministic today. The LLM hooks are intentional scaffolding, not hidden production behavior.
 
 ---

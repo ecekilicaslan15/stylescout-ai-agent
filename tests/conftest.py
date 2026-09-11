@@ -21,6 +21,9 @@ PRODUCTION_WARDROBE = PROJECT_ROOT / "wardrobe" / "wardrobe.json"
 @pytest.fixture(autouse=True)
 def isolate_json_storage(tmp_path, monkeypatch):
     """Route JSON persistence to per-test temp files (never production wardrobe.json)."""
+    from agents.planner import reset_planner_observability
+
+    reset_planner_observability()
     storage_dir = tmp_path / "api_json_storage"
     storage_dir.mkdir(exist_ok=True)
     wardrobe_tmp = storage_dir / "wardrobe.json"
