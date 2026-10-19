@@ -68,19 +68,6 @@
     ],
     "bottoms": [
         {
-            "name": "Beige Tailored Trousers",
-            "category": "bottoms",
-            "color": "beige",
-            "style": "elegant",
-            "image_url": "https://i.pinimg.com/1200x/df/64/77/df6477a9b6d78d30bb82f658de07f481.jpg",
-            "id": "itm_1605ab41",
-            "user_id": "default",
-            "source": "wardrobe",
-            "owned": true,
-            "created_at": "2026-07-27T13:07:09Z",
-            "updated_at": "2026-07-27T13:07:09Z"
-        },
-        {
             "name": "Black Tailored Trousers",
             "category": "bottoms",
             "color": "black",
@@ -321,19 +308,6 @@
         }
     ],
     "accessories": [
-        {
-            "name": "Minimal Gold Necklace",
-            "category": "accessories",
-            "color": "gold",
-            "style": "elegant",
-            "image_url": "https://i.pinimg.com/1200x/8b/2a/fb/8b2afb11c4d2be468f52dbe7d406f16a.jpg",
-            "id": "itm_8cd52c7d",
-            "user_id": "default",
-            "source": "wardrobe",
-            "owned": true,
-            "created_at": "2026-07-27T13:07:09Z",
-            "updated_at": "2026-07-27T13:07:09Z"
-        },
         {
             "name": "Silk Scarf",
             "category": "accessories",

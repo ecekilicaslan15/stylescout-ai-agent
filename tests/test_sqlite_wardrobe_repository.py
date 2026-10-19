@@ -84,14 +84,15 @@ class TestSqliteWardrobeRepository:
         assert items[0]["image_url"] == "/uploads/shirt.jpg"
         assert isinstance(items[0]["id"], int)
 
-    def test_add_item_allows_duplicate_name_in_same_category(
+    def test_add_item_blocks_duplicate_name_unless_allow_duplicate(
         self,
         repository: SqliteWardrobeRepository,
     ):
         payload = {"name": "White Shirt", "color": "white", "style": "casual"}
 
         assert repository.add_item("tops", payload) is True
-        assert repository.add_item("tops", payload) is True
+        assert repository.add_item("tops", payload) is False
+        assert repository.add_item("tops", payload, allow_duplicate=True) is True
 
         items = repository.get_all()
         assert len(items) == 2

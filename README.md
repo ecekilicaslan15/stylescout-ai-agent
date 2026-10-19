@@ -2,24 +2,118 @@
 
 ![Tests](https://github.com/ecekilicaslan15/stylescout-ai-agent/actions/workflows/tests.yml/badge.svg)
 
-**StyleScout** is a portfolio demo of a wardrobe-aware outfit assistant: users manage a personal wardrobe, request outfits in three styling modes, see which pieces they own vs which are suggested gap-fill, and get **marketplace search deep-links** (not product listings or prices) for suggested items.
+StyleScout is a portfolio wardrobe assistant: you browse a personal closet, ask in plain language for an outfit, and get structured results with **owned vs suggested** provenance, a **validation gate** (schema, mode rules, repair, then deterministic fallback), and **marketplace search deep-links** (no scraped inventory or fake prices). One **FastAPI** app serves the vanilla-JS UI and JSON API. **Outfit generation is rule-based today** (`RuleBasedPlanner` + deterministic composer in `StylistAgent`, `USE_LLM=false`). **LLM planning is scaffolded** (`LLMPlanner` / OpenRouter) but **not active** on the request path unless you explicitly enable it.
 
-**Live demo:** https://stylescout-c8c6.onrender.com
+**Tests:** **219 passed** (`pytest -q`) — see [`docs/test_summary.txt`](docs/test_summary.txt) for the latest local run.
+
+---
+
+## Screenshots
+
+Captured at 1440×900 with **`WARDROBE_BACKEND=json`** and a normal first-visit **`sess_*`** session (same flow as a real visitor). Optional smaller demo: [`scripts/seed_portfolio_demo.py`](scripts/seed_portfolio_demo.py).
+
+| | |
+|:---:|:---:|
+| ![Landing](docs/screenshots/01-home.png) | ![Wardrobe grid](docs/screenshots/02-wardrobe.png) |
+| **Landing** — open wardrobe | **Wardrobe** — filters and item grid |
+| ![My wardrobe mode](docs/screenshots/03-outfit-my-wardrobe.png) | ![Wardrobe + AI mode](docs/screenshots/04-outfit-wardrobe-plus-ai.png) |
+| **Outfit — My wardrobe** (owned only) | **Outfit — Wardrobe + AI** (≤2 suggested gaps) |
+| ![AI inspiration mode](docs/screenshots/05-outfit-ai-inspiration.png) | |
+| **Outfit — AI inspiration** (catalogue + ownership check) | |
+
+Regenerate:
+
+```bash
+pip install playwright && playwright install chromium
+python scripts/take_screenshots.py
+```
+
+The script copies `wardrobe/wardrobe.json` into `data/screenshot_runtime/` (gitignored), starts a temporary server, and captures PNGs so `sess_*` rows are never written to the committed seed file.
+
+---
+
+## Tech stack
+
+| Layer | Choice |
+|-------|--------|
+| API | **FastAPI** + **Uvicorn** |
+| Frontend | **Vanilla HTML/CSS/JS** (served as static files from `frontend/`) |
+| Persistence | **SQLite** (Docker / optional local demo) or **JSON** (`wardrobe/wardrobe.json`) |
+| Validation | **Pydantic** models + `OutfitValidator` (repair → rule-based fallback) |
+| Agents | **StylistAgent**, **InlineEditAgent** (orchestrator); everything else is a service |
+| Tests | **pytest** + Starlette TestClient (`httpx2`) |
+| Deploy | **Docker** (`python:3.11-slim`) on Render |
+
+There is **no Next.js** and **no PostgreSQL** in this repo.
+
+---
+
+## Run locally
+
+### 1. Backend + UI (recommended for development)
+
+```bash
+cd fashion-agent
+python3 -m venv .venv && source .venv/bin/activate   # optional
+pip install -r requirements.txt
+cp .env.example .env                                 # do not commit .env
+uvicorn api.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+Open **http://127.0.0.1:8000**. The app serves `frontend/index.html` and the API on the same origin.
+
+Default `.env` uses `WARDROBE_BACKEND=json` and the committed sample wardrobe in `wardrobe/wardrobe.json`. New browser sessions get a `stylescout_session` cookie and a copy of the sample closet when empty.
+
+### 2. Optional portfolio demo DB (~15 fictional items)
+
+For a smaller isolated closet (not your `wardrobe/wardrobe.json`):
+
+```bash
+python3 scripts/seed_portfolio_demo.py
+ALLOW_DEFAULT_OVERRIDE=true WARDROBE_BACKEND=sqlite DB_PATH=data/portfolio_demo.db \
+  uvicorn api.main:app --host 127.0.0.1 --port 8000
+```
+
+Use cookie `stylescout_session=default` in API clients (local only; **never** enable `ALLOW_DEFAULT_OVERRIDE` on a public host). Verify outfits:
+
+```bash
+curl -s -H 'Cookie: stylescout_session=default' \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"casual dinner","mode":"my_wardrobe"}' \
+  http://127.0.0.1:8000/api/outfits
+```
+
+All three modes (`my_wardrobe`, `wardrobe_plus_ai`, `ai_inspiration`) work **without** an OpenRouter key while `USE_LLM=false`.
+
+### 3. Docker (matches production)
+
+```bash
+docker build -t stylescout .
+docker run -p 8000:8000 -e PORT=8000 stylescout
+```
+
+Open http://localhost:8000. Image uses SQLite at `/app/data/wardrobe.db` and `HEALTHCHECK` on `GET /health`.
+
+### Tests
+
+```bash
+pytest -q
+```
 
 ---
 
 ## What it does (60 seconds)
 
-1. **Wardrobe** — Add, edit, and delete items scoped to an anonymous browser session (`sess_<uuid>` cookie).
-2. **Outfit generation** — Natural-language prompt → deterministic rule-based composer → validation gate → JSON response with provenance badges.
+1. **Wardrobe** — Browse items scoped to an anonymous browser session (`sess_<uuid>` cookie).
+2. **Outfit generation** — Natural-language prompt → rule-based composer → validation gate → JSON with provenance badges.
 3. **Three modes:**
-   - **My wardrobe** — owned pieces only; never invents items outside the closet.
+   - **My wardrobe** — owned pieces only.
    - **Wardrobe + AI** — mostly owned; up to **two** suggested catalogue items with shopping search links.
-   - **AI inspiration** — ideal outfit from catalogue, then ownership resolver marks pieces you already own.
-4. **Inline edit** — Free-text swap on one board slot (keyword rules, no full re-generation).
-5. **Transparency** — Owned/suggested badges, validation notices when the gate repairs or falls back, grounded explanation bullets (no numeric “AI scores”).
+   - **AI inspiration** — catalogue outfit, then ownership resolver marks pieces you already own.
+4. **Inline edit** — Free-text swap on one board slot (keyword rules).
+5. **Transparency** — Owned/suggested badges, validation notices, grounded explanation bullets (no numeric “AI scores”).
 
-Architecture details: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · API: [`docs/API_SPEC.md`](docs/API_SPEC.md) · Data: [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md)
+Architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · API: [`docs/API_SPEC.md`](docs/API_SPEC.md) · Data: [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md)
 
 ---
 
@@ -59,29 +153,6 @@ Honest limits (see `docs/DECISIONS.md` “Known gap” rows for provenance):
 This project is a **portfolio piece**, not a commercial product. It deliberately rejects fake product catalogs, scraped inventory, and affiliate APIs (see SCOUT-010 in `docs/DECISIONS.md`).
 
 The design thesis: turn a styling opinion into a **structured, legal, scraping-free `SearchSpec`** and a **deep link to a real marketplace search** — defensible output without pretending to know stock or price. There is **no monetization model** implemented; no affiliate tracking, no paid tiers, no product margin.
-
----
-
-## Quick start
-
-### Docker (matches production)
-
-```bash
-docker build -t stylescout .
-docker run -p 8000:8000 -e PORT=8000 stylescout
-```
-
-Open `http://localhost:8000`. Image uses SQLite at `/app/data/wardrobe.db` and `HEALTHCHECK` on `GET /health`.
-
-### Local dev
-
-```bash
-cp .env.example .env
-pip install -r requirements.txt
-uvicorn api.main:app --reload
-```
-
-Default local backend is JSON (`WARDROBE_BACKEND=json`). Tests: `pytest -q`.
 
 ---
 

@@ -8,6 +8,7 @@ from wardrobe.constants import CATEGORIES
 from wardrobe.database import get_db_path, init_wardrobe_db, wardrobe_connection
 from wardrobe.normalization import (
     clean_item_name,
+    normalize_stored_category,
     normalize_stored_color,
     normalize_style,
     resolve_stored_color,
@@ -122,14 +123,37 @@ class SqliteWardrobeRepository(WardrobeRepository):
                 matches.append(_row_to_item(row))
         return matches
 
-    def add_item(self, category: str, item: dict) -> bool:
+    def _duplicate_name_exists(self, category: str, name: str) -> bool:
+        normalized_name = clean_item_name(name).lower()
+        if not normalized_name:
+            return False
+        with wardrobe_connection(self._db_path) as connection:
+            row = connection.execute(
+                """
+                SELECT 1
+                FROM wardrobe_items
+                WHERE user_id = ? AND category = ? AND lower(name) = ?
+                LIMIT 1
+                """,
+                (self._user_id, category, normalized_name),
+            ).fetchone()
+        return row is not None
+
+    def add_item(self, category: str, item: dict, *, allow_duplicate: bool = False) -> bool:
+        category = normalize_stored_category(category)
         validate_category(category)
 
         name = clean_item_name(item.get("name", ""))
         if not name:
             return False
 
+        if self._duplicate_name_exists(category, name) and not allow_duplicate:
+            return False
+
         color = resolve_stored_color(item.get("color"))
+        if not color:
+            return False
+
         style = normalize_style(item.get("style", "casual"))
         event = item.get("event")
         if isinstance(event, str):
@@ -141,35 +165,82 @@ class SqliteWardrobeRepository(WardrobeRepository):
         else:
             image_url = None
 
+        source = item.get("source", "wardrobe")
+        owned = 1 if bool(item.get("owned", True)) else 0
+
         with wardrobe_connection(self._db_path) as connection:
             connection.execute(
                 """
                 INSERT INTO wardrobe_items (
-                    user_id, name, category, color, style, event, image_url
+                    user_id, name, category, color, style, event, image_url,
+                    source, owned
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (self._user_id, name, category, color, style, event, image_url),
+                (
+                    self._user_id,
+                    name,
+                    category,
+                    color,
+                    style,
+                    event,
+                    image_url,
+                    source,
+                    owned,
+                ),
             )
         return True
 
-    def update_item(self, item_id: int, item: dict) -> bool:
+    def update_item(self, item_id: int, item: dict, *, allow_duplicate: bool = False) -> bool:
         """Update one item scoped by id and user_id. Refreshes updated_at."""
         fields: list[str] = []
         values: list[object] = []
+
+        target_category = None
+        target_name = None
+        with wardrobe_connection(self._db_path) as connection:
+            existing = connection.execute(
+                """
+                SELECT name, category FROM wardrobe_items
+                WHERE id = ? AND user_id = ?
+                """,
+                (item_id, self._user_id),
+            ).fetchone()
+        if existing is None:
+            return False
+        target_name = existing["name"]
+        target_category = existing["category"]
 
         if "name" in item:
             name = clean_item_name(item.get("name", ""))
             if not name:
                 return False
+            target_name = name
             fields.append("name = ?")
             values.append(name)
 
         if "category" in item:
-            category = item.get("category")
+            category = normalize_stored_category(item.get("category"))
             validate_category(category)
+            target_category = category
             fields.append("category = ?")
             values.append(category)
+
+        if not allow_duplicate and self._duplicate_name_exists(target_category, target_name):
+            with wardrobe_connection(self._db_path) as connection:
+                clash = connection.execute(
+                    """
+                    SELECT id FROM wardrobe_items
+                    WHERE user_id = ? AND category = ? AND lower(name) = ?
+                    """,
+                    (
+                        self._user_id,
+                        target_category,
+                        clean_item_name(target_name).lower(),
+                    ),
+                ).fetchall()
+            if len(clash) != 1 or clash[0]["id"] != item_id:
+                return False
 
         if "color" in item:
             color = resolve_stored_color(item.get("color"))
